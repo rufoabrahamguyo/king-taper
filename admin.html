@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - King Taper</title>
+    <link rel="stylesheet" href="new.css">
+    <style>
+        .admin-container {
+            max-width: 1100px;
+            margin: 4rem auto;
+            padding: 2rem;
+            background: var(--light);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+        .admin-title {
+            text-align: center;
+            color: var(--accent);
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+        }
+        .admin-login {
+            max-width: 400px;
+            margin: 3rem auto;
+            background: var(--primary);
+            color: var(--light);
+            padding: 2rem;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+        .admin-login label {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            display: block;
+        }
+        .admin-login input[type="text"],
+        .admin-login input[type="password"] {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1.5rem;
+            border: 2px solid var(--accent);
+            border-radius: var(--radius);
+            font-size: 1rem;
+        }
+        .admin-login button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--accent);
+            color: var(--primary);
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .admin-login button:hover {
+            background: var(--gold-dark);
+            color: var(--light);
+        }
+        .admin-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 2rem;
+        }
+        .admin-table th, .admin-table td {
+            border: 1px solid var(--accent);
+            padding: 0.75rem 1rem;
+            text-align: left;
+        }
+        .admin-table th {
+            background: var(--primary);
+            color: var(--accent);
+        }
+        .admin-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        .logout-btn {
+            float: right;
+            margin-bottom: 1rem;
+            background: var(--accent);
+            color: var(--primary);
+            border: none;
+            border-radius: var(--radius);
+            padding: 0.5rem 1.5rem;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .logout-btn:hover {
+            background: var(--gold-dark);
+            color: var(--light);
+        }
+        .error-message {
+            color: #ff6b6b;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="index.html">
+                    <img src="./logo.png" alt="King Taper Logo" class="logo-img" style="display: block;" />
+                </a>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="index.html" class="nav-link">Home</a></li>
+                <li class="nav-item"><a href="about.html" class="nav-link">About</a></li>
+                <li class="nav-item"><a href="services/hair.html" class="nav-link">Services</a></li>
+                <li class="nav-item"><a href="booking.html" class="nav-link">Booking</a></li>
+            </ul>
+        </div>
+    </nav>
+    <div class="admin-container">
+        <div class="admin-title">Admin Dashboard</div>
+        <div id="admin-login-section" class="admin-login">
+            <div class="error-message" id="login-error" style="display:none;"></div>
+            <form id="admin-login-form">
+                <label for="admin-username">Username</label>
+                <input type="text" id="admin-username" name="username" required>
+                <label for="admin-password">Password</label>
+                <input type="password" id="admin-password" name="password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+        <div id="admin-dashboard-section" style="display:none;">
+            <button class="logout-btn" id="logout-btn">Logout</button>
+            <table class="admin-table" id="bookings-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Service</th>
+                        <th>Price</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th>Notes</th>
+                        <th>Created At</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Bookings will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>King Taper</h3>
+                    <p>Premium grooming services for the modern gentleman.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About</a></li>
+                        <li><a href="services/hair.html">Services</a></li>
+                        <li><a href="booking.html">Booking</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Services</h4>
+                    <ul>
+                        <li><a href="services/hair.html">Hair Services</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Follow Us</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link">Facebook</a>
+                        <a href="#" class="social-link">Instagram</a>
+                        <a href="#" class="social-link">Twitter</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 King Taper. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    <script src="new.js"></script>
+    <script>
+        const loginSection = document.getElementById('admin-login-section');
+        const dashboardSection = document.getElementById('admin-dashboard-section');
+        const loginForm = document.getElementById('admin-login-form');
+        const loginError = document.getElementById('login-error');
+        const logoutBtn = document.getElementById('logout-btn');
+        const bookingsTableBody = document.querySelector('#bookings-table tbody');
+    
+        function showDashboard() {
+            loginSection.style.display = 'none';
+            dashboardSection.style.display = 'block';
+            fetchBookings();
+        }
+    
+        function showLogin() {
+            loginSection.style.display = 'block';
+            dashboardSection.style.display = 'none';
+        }
+    
+        loginForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            loginError.style.display = 'none';
+            fetch('http://localhost:3001/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include', // ✅ ensures session is stored
+                body: JSON.stringify({
+                    username: document.getElementById('admin-username').value,
+                    password: document.getElementById('admin-password').value
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    showDashboard();
+                } else {
+                    loginError.textContent = data.error || 'Login failed';
+                    loginError.style.display = 'block';
+                }
+            })
+            .catch(() => {
+                loginError.textContent = 'Server error';
+                loginError.style.display = 'block';
+            });
+        });
+    
+        logoutBtn.addEventListener('click', function () {
+            fetch('http://localhost:3001/api/admin/logout', {
+                method: 'POST',
+                credentials: 'include' // ✅ so session clears
+            }).then(() => {
+                showLogin();
+            });
+        });
+    
+        function fetchBookings() {
+            bookingsTableBody.innerHTML = '<tr><td colspan="10">Loading...</td></tr>';
+            fetch('http://localhost:3001/api/admin/bookings', {
+                credentials: 'include' // ✅ use session cookie
+            })
+            .then(res => {
+                if (res.status === 401) throw new Error('Unauthorized');
+                return res.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    if (data.bookings.length === 0) {
+                        bookingsTableBody.innerHTML = '<tr><td colspan="10">No bookings found.</td></tr>';
+                    } else {
+                        bookingsTableBody.innerHTML = data.bookings.map(b => `
+                            <tr>
+                                <td>${b.id}</td>
+                                <td>${b.name}</td>
+                                <td>${b.email}</td>
+                                <td>${b.phone}</td>
+                                <td>${b.service}</td>
+                                <td>${b.price}</td>
+                                <td>${b.date}</td>
+                                <td>${b.time}</td>
+                                <td>${b.message || ''}</td>
+                                <td>${b.created_at ? new Date(b.created_at).toLocaleString() : ''}</td>
+                            </tr>
+                        `).join('');
+                    }
+                } else {
+                    bookingsTableBody.innerHTML = '<tr><td colspan="10">Error loading bookings.</td></tr>';
+                }
+            })
+            .catch(err => {
+                bookingsTableBody.innerHTML = `<tr><td colspan="10">${err.message}</td></tr>`;
+            });
+        }
+    
+        // Auto-login check
+        fetch('http://localhost:3001/api/admin/bookings', {
+            credentials: 'include'
+        })
+        .then(res => {
+            if (res.status === 200) showDashboard();
+        });
+    </script>
+    
+    
+</body>
+</html> 

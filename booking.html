@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Appointment - King Taper</title>
+    <link rel="stylesheet" href="new.css">
+    <style>
+        .booking-hero {
+            background: linear-gradient(120deg, var(--primary) 60%, var(--secondary) 100%);
+            color: var(--light);
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .booking-hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        .booking-hero p {
+            font-size: 1.4rem;
+            color: var(--light);
+        }
+
+        .booking-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        .booking-form {
+            background: var(--light);
+            border: 2px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 3rem;
+            box-shadow: var(--shadow);
+        }
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid var(--gray);
+            border-radius: var(--radius);
+            font-size: 1rem;
+            background: #fff;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: var(--accent);
+            outline: none;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .submit-btn {
+            background: var(--accent);
+            color: var(--primary);
+            border: 2px solid var(--accent);
+            padding: 1.2rem 3rem;
+            border-radius: var(--radius);
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 1rem;
+        }
+
+        .submit-btn:hover {
+            background: var(--gold-dark);
+            border-color: var(--gold-dark);
+            color: var(--light);
+        }
+
+        .service-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .service-option {
+            background: var(--primary);
+            color: var(--light);
+            padding: 1rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .service-option:hover {
+            border-color: var(--accent);
+            transform: translateY(-2px);
+        }
+
+        .service-option.selected {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: var(--primary);
+        }
+
+        .service-price {
+            font-size: 0.9rem;
+            color: var(--accent);
+            margin-top: 0.5rem;
+        }
+
+        .success-message {
+            background: #4CAF50;
+            color: white;
+            padding: 1rem;
+            border-radius: var(--radius);
+            margin-top: 1rem;
+            text-align: center;
+            display: none;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .booking-form {
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="index.html">
+                    <img src="./logo.png" alt="King Taper Logo" class="logo-img" style="display: block;">
+                </a>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a href="about.html" class="nav-link">About</a>
+                </li>
+                <li class="nav-item">
+                    <a href="services/hair.html" class="nav-link">Services</a>
+                </li>
+                <li class="nav-item">
+                    <a href="index.html#contact" class="nav-link">Contact</a>
+                </li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Booking Hero -->
+    <section class="booking-hero">
+        <div class="container">
+            <h1>Book Your Appointment</h1>
+            <p>Schedule your premium grooming experience with King Taper</p>
+        </div>
+    </section>
+
+    <!-- Booking Form -->
+    <section class="booking-container">
+        <form class="booking-form" id="bookingForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="firstName">First Name *</label>
+                    <input type="text" id="firstName" name="firstName" required>
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Last Name *</label>
+                    <input type="text" id="lastName" name="lastName" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="email">Email Address *</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">Phone Number *</label>
+                    <input type="tel" id="phone" name="phone" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Select Service *</label>
+                <div class="service-options">
+                    <div class="service-option" data-service="Hair Cut" data-price="500">
+                        <strong>Hair Cut</strong>
+                        <div class="service-price">KSH 500</div>
+                    </div>
+                    <div class="service-option" data-service="Hair Cut & Beard" data-price="700">
+                        <strong>Hair Cut & Beard</strong>
+                        <div class="service-price">KSH 700</div>
+                    </div>
+                    <div class="service-option" data-service="Beard Trim" data-price="200">
+                        <strong>Beard Trim</strong>
+                        <div class="service-price">KSH 200</div>
+                    </div>
+                    <div class="service-option" data-service="Kids Cut" data-price="300">
+                        <strong>Kids Cut</strong>
+                        <div class="service-price">KSH 300</div>
+                    </div>
+                    <div class="service-option" data-service="Coils & Haircut" data-price="1500">
+                        <strong>Coils & Haircut</strong>
+                        <div class="service-price">KSH 1,500</div>
+                    </div>
+                    <div class="service-option" data-service="Barrel Twist" data-price="1000">
+                        <strong>Barrel Twist</strong>
+                        <div class="service-price">KSH 1,000</div>
+                    </div>
+                    <div class="service-option" data-service="Twist" data-price="1000">
+                        <strong>Twist</strong>
+                        <div class="service-price">KSH 1,000</div>
+                    </div>
+                    <div class="service-option" data-service="Hair Color" data-price="500">
+                        <strong>Hair Color</strong>
+                        <div class="service-price">KSH 500</div>
+                    </div>
+                </div>
+                <input type="hidden" id="selectedService" name="selectedService" required>
+                <input type="hidden" id="selectedPrice" name="selectedPrice" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="date">Preferred Date *</label>
+                    <input type="date" id="date" name="date" required min="">
+                </div>
+                <div class="form-group">
+                    <label for="time">Preferred Time *</label>
+                    <select id="time" name="time" required>
+                        <option value="">Select Time</option>
+                        <option value="09:00">9:00 AM</option>
+                        <option value="09:40">9:40 AM</option>
+                        <option value="10:20">10:20 AM</option>
+                        <option value="11:00">11:00 AM</option>
+                        <option value="11:40">11:40 AM</option>
+                        <option value="12:20">12:20 PM</option>
+                        <option value="13:00">1:00 PM</option>
+                        <option value="13:40">1:40 PM</option>
+                        <option value="14:20">2:20 PM</option>
+                        <option value="15:00">3:00 PM</option>
+                        <option value="15:40">3:40 PM</option>
+                        <option value="16:20">4:20 PM</option>
+                        <option value="17:00">5:00 PM</option>
+                        <option value="17:40">5:40 PM</option>
+                        <option value="18:20">6:20 PM</option>
+                        <option value="19:00">7:00 PM</option>
+                        <option value="19:40">7:40 PM</option>
+                        <option value="20:20">8:20 PM</option>
+                        <option value="21:00">9:00 PM</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="message">Additional Notes</label>
+                <textarea id="message" name="message" rows="4" placeholder="Any special requests or additional information..."></textarea>
+            </div>
+
+            <button type="submit" class="submit-btn">Book Appointment</button>
+        </form>
+
+        <div class="success-message" id="successMessage">
+            Thank you! Your appointment has been booked successfully. We'll confirm your booking via WhatsApp shortly.
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>King Taper</h3>
+                    <p>Premium grooming services for the modern gentleman.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About</a></li>
+                        <li><a href="services/hair.html">Services</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Services</h4>
+                    <ul>
+                        <li><a href="services/hair.html">Hair Services</a></li>
+                        
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Follow Us</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link">Facebook</a>
+                        <a href="#" class="social-link">Instagram</a>
+                        <a href="#" class="social-link">Twitter</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 King Taper. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').min = today;
+        
+            const serviceOptions = document.querySelectorAll('.service-option');
+            const selectedServiceInput = document.getElementById('selectedService');
+            const selectedPriceInput = document.getElementById('selectedPrice');
+        
+            serviceOptions.forEach(option => {
+                option.addEventListener('click', function () {
+                    serviceOptions.forEach(opt => opt.classList.remove('selected'));
+                    this.classList.add('selected');
+                    selectedServiceInput.value = this.dataset.service;
+                    selectedPriceInput.value = this.dataset.price;
+                });
+            });
+        
+            document.getElementById('bookingForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+        
+                const formData = new FormData(this);
+                const bookingData = {
+                    name: formData.get('firstName') + ' ' + formData.get('lastName'),
+                    email: formData.get('email'),
+                    phone: formData.get('phone'),
+                    service: formData.get('selectedService'),
+                    price: formData.get('selectedPrice'),
+                    date: formData.get('date'),
+                    time: formData.get('time'),
+                    message: formData.get('message')
+                };
+        
+                console.log('Submitting booking to backend:', bookingData);
+        
+                const message = `New Booking Request:\n
+        Name: ${bookingData.name}
+        Email: ${bookingData.email}
+        Phone: ${bookingData.phone}
+        Service: ${bookingData.service} (KSH ${bookingData.price})
+        Date: ${bookingData.date}
+        Time: ${bookingData.time}
+        Notes: ${bookingData.message || 'None'}`;
+        
+                // ✅ Immediately open a new tab (browser won't block it)
+                const waURL = `https://wa.me/254703456797?text=${encodeURIComponent(message)}`;
+                const waTab = window.open('', '_blank');
+        
+                // ✅ Save to backend
+                fetch('http://localhost:3001/api/book', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bookingData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Booking saved to database.');
+                        waTab.location = waURL; // 🔁 Set the URL after success
+        
+                        document.getElementById('successMessage').style.display = 'block';
+                        document.getElementById('bookingForm').reset();
+                        serviceOptions.forEach(opt => opt.classList.remove('selected'));
+                        selectedServiceInput.value = '';
+                        selectedPriceInput.value = '';
+                    } else {
+                        alert('Booking failed to save.');
+                        console.error(data.error);
+                        waTab.close(); // Close the tab if saving failed
+                    }
+                })
+                .catch(error => {
+                    alert('Server error. Could not save booking.');
+                    console.error(error);
+                    waTab.close();
+                });
+            });
+        });
+        </script>
+        
+
+    
+        
+
+
+    
+</body>
+</html> 

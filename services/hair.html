@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hair Services - King Taper</title>
+    <link rel="stylesheet" href="../new.css" />
+    <style>
+        .services-hero {
+            background: linear-gradient(120deg, var(--primary) 60%, var(--secondary) 100%);
+            color: var(--light);
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .services-hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        .services-hero p {
+            font-size: 1.4rem;
+            color: var(--light);
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        .service-card {
+            background: var(--light);
+            border: 2px solid var(--accent);
+            border-radius: var(--radius);
+            padding: 2.5rem;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(212, 175, 55, 0.2);
+        }
+
+        .service-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            color: var(--accent);
+        }
+
+        .service-title,
+        .service-description,
+        .service-price {
+            width: 100%;
+            text-align: center;
+        }
+
+        .service-title {
+            font-size: 1.8rem;
+            color: var(--primary);
+            margin-bottom: 1rem;
+            font-weight: bold;
+        }
+
+        .service-description {
+            color: var(--gray);
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+
+        .service-price {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 1.5rem;
+            margin-top: 0.5rem;
+            white-space: nowrap;
+            letter-spacing: normal;
+        }
+
+        .service-duration {
+            font-size: 1.05rem;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        /* optional: shrink price a bit on very small screens */
+        @media (max-width: 400px) {
+            .service-price {
+                font-size: 2rem; /* was 2.5rem */
+            }
+        }
+
+        .book-btn {
+            background: var(--accent);
+            color: var(--primary);
+            border: 2px solid var(--accent);
+            padding: 1rem 2rem;
+            border-radius: var(--radius);
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .book-btn:hover {
+            background: var(--gold-dark);
+            border-color: var(--gold-dark);
+            color: var(--light);
+        }
+
+        .currency-note {
+            text-align: center;
+            padding: 2rem;
+            background: var(--primary);
+            color: var(--light);
+            font-size: 1.1rem;
+        }
+
+        .currency-note strong {
+            color: var(--accent);
+        }
+
+        /* Horizontal slide-in for the services page title */
+        .slide-in-horizontal {
+            opacity: 0;
+            transform: translateX(-60px);
+            animation: slideInHorizontal 1s cubic-bezier(0.4,0,0.2,1) forwards;
+        }
+        @keyframes slideInHorizontal {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar slide-in">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="../index.html">
+                    <img src="../logo.png" alt="King Taper Logo" class="logo-img" style="display: block;" />
+                </a>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item"><a href="../index.html" class="nav-link">Home</a></li>
+                <li class="nav-item"><a href="../about.html" class="nav-link">About</a></li>
+                <li class="nav-item"><a href="hair.html" class="nav-link active">Services</a></li>
+                <li class="nav-item"><a href="../index.html#contact" class="nav-link">Contact</a></li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Services Hero -->
+    <section class="services-hero slide-in">
+        <div class="container">
+            <h1 class="slide-in-horizontal">Hair Services</h1>
+            <p>Premium cuts and styling for the modern gentleman</p>
+        </div>
+    </section>
+
+    <!-- Currency Note -->
+    <div class="currency-note slide-in">
+        <strong>All prices are in Kenyan Shillings (KSH)</strong>
+    </div>
+
+    <!-- Services Grid -->
+    <section class="services-section slide-in">
+        <div class="services-grid">
+            <!-- Hair Cut -->
+            <div class="service-card slide-in">
+                
+                <h3 class="service-title">Hair Cut</h3>
+                <p class="service-description">
+                    Professional haircut with precision styling and finishing touches.
+                </p>
+                <!-- Move the price BELOW the description -->
+                <div class="service-price">KSH 500</div>
+                <div class="service-duration">Duration: 30–40 minutes</div>
+                <a href="../booking.html" class="book-btn">Book Now</a>
+            </div>
+            
+
+            <!-- Hair Cut & Beard -->
+            <div class="service-card slide-in">
+                
+                <h3 class="service-title">Hair Cut &amp; Beard</h3>
+                <p class="service-description">
+                    Complete grooming package including haircut and beard trimming.
+                </p>
+                <div class="service-price">KSH 700</div>
+                <div class="service-duration">Duration: 30–40 minutes</div>
+                <a href="../booking.html" class="book-btn">Book Now</a>
+            </div>
+
+            <!-- Beard Trim -->
+            <div class="service-card slide-in">
+                
+                <h3 class="service-title">Beard Trim</h3>
+                <p class="service-description">
+                    Professional beard trimming and shaping for a clean, defined look.
+                </p>
+                <div class="service-price">KSH 200</div>
+                <div class="service-duration">Duration: 30–40 minutes</div>
+                <a href="../booking.html" class="book-btn">Book Now</a>
+            </div>
+
+            <!-- Kids Cut -->
+            <div class="service-card">
+                
+                <h3 class="service-title">Kids Cut</h3>
+                <p class="service-description">
+                    Gentle and fun haircuts specially designed for children.
+                </p>
+                <div class="service-price">KSH 300</div>
+                <div class="service-duration">Duration: 30–40 minutes</div>
+                <a href="../booking.html" class="book-btn">Book Now</a>
+            </div>
+
+            <!-- Coils & Haircut -->
+            <div class="service-card">
+                
+                <h3 class="service-title">Coils &amp; Haircut</h3>
+                <p class="service-description">
+                    Specialized coil styling combined with precision haircut.
+                </p>
+                <div class="service-price">KSH 1,500</div>
+                <div class="service-duration">Duration: 30–40 minutes</div>
+                <a href="../booking.html" class="book-btn">Book Now</a>
+            </div>
+
+            <!-- Barrel Twist -->
+            <div class="service-card">
+               
+                <h3 class="service-title">Barrel Twist</h3>
+                <p class="service-description">
+                    Professional barrel twist styling for textured hair.
+                </p>
+                <div class="service-price">KSH 1,000</div>
+                <div class="service-duration">Duration: 30–40 minutes</div>
+                <a href="../booking.html" class="book-btn">Book Now</a>
+            </div>
+
+            <!-- Twist -->
+            <div class="service-card">
+                
+                <h3 class="service-title">Twist</h3>
+                <p class="service-description">
+                    Classic twist styling for natural hair texture.
+                </p>
+                <div class="service-price">KSH 1,000</div>
+                <div class="service-duration">Duration: 30–40 minutes</div>
+                <a href="../booking.html" class="book-btn">Book Now</a>
+            </div>
+
+            <!-- Hair Color -->
+            <div class="service-card">
+                
+                <h3 class="service-title">Hair Color</h3>
+                <p class="service-description">
+                    Professional hair coloring and treatment services.
+                </p>
+                <div class="service-price">KSH 500</div>
+                <div class="service-duration">Duration: 30–40 minutes</div>
+                <a href="../booking.html" class="book-btn">Book Now</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>King Taper</h3>
+                    <p>Premium grooming services for the modern gentleman.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="../index.html">Home</a></li>
+                        <li><a href="../about.html">About</a></li>
+                        <li><a href="hair.html">Services</a></li>
+                        <li><a href="../index.html#contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Services</h4>
+                    <ul>
+                        <li><a href="hair.html">Hair Services</a></li>
+                        
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Follow Us</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link">Facebook</a>
+                        <a href="#" class="social-link">Instagram</a>
+                        <a href="#" class="social-link">Twitter</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 King Taper. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../new.js"></script>
+</body>
+</html>

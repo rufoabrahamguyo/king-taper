@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us - King Taper</title>
+    <link rel="stylesheet" href="new.css">
+    <style>
+        .about-content, .mission-vision, .statistics {
+            padding: 4rem 2rem;
+            background: var(--light);
+        }
+        
+        .about-intro {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+            padding: 3rem;
+            border: 2px solid var(--accent);
+            border-radius: var(--radius);
+            background: var(--primary);
+            color: var(--light);
+            box-shadow: var(--shadow);
+        }
+
+        .about-text h2 {
+            color: var(--accent);
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .about-text p {
+            font-size: 1.2rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+
+        .mv-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .mv-card {
+            text-align: center;
+            padding: 2.5rem;
+            border: 2px solid var(--accent);
+            border-radius: var(--radius);
+            background: var(--primary);
+            color: var(--light);
+            transition: transform 0.3s ease;
+        }
+
+        .mv-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .mv-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+            color: var(--accent);
+        }
+
+        .mv-card h3 {
+            color: var(--accent);
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 2rem;
+            border: 2px solid var(--accent);
+            border-radius: var(--radius);
+            background: var(--primary);
+            color: var(--light);
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1.2rem;
+            color: var(--light);
+        }
+
+        .page-header {
+            background: linear-gradient(120deg, var(--primary) 60%, var(--secondary) 100%);
+            color: var(--light);
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        .page-header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            color: var(--accent);
+        }
+
+        .page-header p {
+            font-size: 1.4rem;
+            color: var(--light);
+        }
+
+        .opening-times {
+            padding: 4rem 2rem;
+            background: var(--light);
+        }
+
+        .times-grid {
+            max-width: 600px;
+            margin: 0 auto;
+            border: 2px solid var(--accent);
+            border-radius: var(--radius);
+            background: var(--primary);
+            overflow: hidden;
+        }
+
+        .time-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.2rem 2rem;
+            color: var(--light);
+            border-bottom: 1px solid var(--accent);
+            transition: background-color 0.3s ease;
+        }
+
+        .time-item:last-child {
+            border-bottom: none;
+        }
+
+        .time-item:hover {
+            background-color: var(--secondary);
+        }
+
+        .day {
+            font-size: 1.2rem;
+            font-weight: 500;
+        }
+
+        .hours {
+            font-size: 1.2rem;
+            color: var(--accent);
+        }
+
+        .hours.closed {
+            color: #ff6b6b;
+        }
+
+        .section-title {
+            text-align: center;
+            color: var(--primary);
+            font-size: 2.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Horizontal slide-in for the about page title */
+        .slide-in-horizontal {
+            opacity: 0;
+            transform: translateX(-60px);
+            animation: slideInHorizontal 1s cubic-bezier(0.4,0,0.2,1) forwards;
+        }
+        @keyframes slideInHorizontal {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="index.html">
+                    <img src="./logo.png" alt="King Taper Logo" class="logo-img" style="display: block;">
+                </a>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a href="about.html" class="nav-link active">About</a>
+                </li>
+                <li class="nav-item">
+                    <a href="services/hair.html" class="nav-link">Services</a>
+                </li>
+                <li class="nav-item">
+                    <a href="index.html#contact" class="nav-link">Contact</a>
+                </li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Header -->
+    <section class="page-header">
+        <div class="container">
+            <h1 class="slide-in-horizontal">About King Taper</h1>
+            <p>Where Precision Meets Style - Your Journey to the Perfect Cut</p>
+        </div>
+    </section>
+
+    <!-- About Content -->
+    <section class="about-content">
+        <div class="container">
+            <div class="about-intro">
+                <div class="about-text">
+                    <h2>Our Story</h2>
+                    <p>King Taper was born from the passion and dedication of King Ngotho, a self-taught barber who has revolutionized the art of men's grooming in both Mombasa, Kenya, and Dubai, UAE. What started as a personal journey to master the craft has evolved into a premium grooming service that combines traditional techniques with modern innovation.</p>
+                    <p>Our journey began with a simple mission: to provide exceptional grooming experiences that transform not just appearances, but confidence. Today, we're proud to serve clients across two continents, bringing our signature style and attention to detail to every cut.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mission & Vision -->
+    <section class="mission-vision">
+        <div class="container">
+            <div class="mv-grid">
+                <div class="mv-card">
+                    <div class="mv-icon">🎯</div>
+                    <h3>Our Mission</h3>
+                    <p>To deliver exceptional grooming experiences that enhance confidence and style, using precision techniques and premium products while maintaining the highest standards of service and attention to detail.</p>
+                </div>
+                <div class="mv-card">
+                    <div class="mv-icon">👁️</div>
+                    <h3>Our Vision</h3>
+                    <p>To be the leading premium grooming destination in both Kenya and the UAE, setting new standards for excellence in men's grooming and customer satisfaction.</p>
+                </div>
+                <div class="mv-card">
+                    <div class="mv-icon">💎</div>
+                    <h3>Our Values</h3>
+                    <p>Excellence in craftsmanship, personalized attention, and unwavering commitment to client satisfaction drive everything we do. We believe in creating lasting relationships through exceptional service.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Opening Times -->
+    <section class="opening-times">
+        <div class="container">
+            <h2 class="section-title">Opening Hours</h2>
+            <div class="times-grid">
+                <div class="time-item">
+                    <div class="day">Monday</div>
+                    <div class="hours">09:00 - 21:00</div>
+                </div>
+                <div class="time-item">
+                    <div class="day">Tuesday</div>
+                    <div class="hours">09:00 - 21:00</div>
+                </div>
+                <div class="time-item">
+                    <div class="day">Wednesday</div>
+                    <div class="hours closed">Closed</div>
+                </div>
+                <div class="time-item">
+                    <div class="day">Thursday</div>
+                    <div class="hours">09:00 - 21:00</div>
+                </div>
+                <div class="time-item">
+                    <div class="day">Friday</div>
+                    <div class="hours">09:00 - 21:00</div>
+                </div>
+                <div class="time-item">
+                    <div class="day">Saturday</div>
+                    <div class="hours">09:00 - 21:00</div>
+                </div>
+                <div class="time-item">
+                    <div class="day">Sunday</div>
+                    <div class="hours">09:00 - 21:00</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>King Taper</h3>
+                    <p>Premium grooming services for the modern gentleman.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About</a></li>
+                        <li><a href="services/hair.html">Services</a></li>
+                        <li><a href="index.html#contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Services</h4>
+                    <ul>
+                        <li><a href="services/hair.html">Hair Services</a></li>
+                        
+                </div>
+                <div class="footer-section">
+                    <h4>Follow Us</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link">Facebook</a>
+                        <a href="#" class="social-link">Instagram</a>
+                        <a href="#" class="social-link">Twitter</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 King Taper. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

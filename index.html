@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>King Taper - Premium Grooming Services</title>
+    <link rel="stylesheet" href="new.css">
+    <style>
+        /* Horizontal slide-in for the index page hero words */
+        .slide-in-horizontal {
+            opacity: 0;
+            transform: translateX(-60px);
+            animation: slideInHorizontal 1s cubic-bezier(0.4,0,0.2,1) forwards;
+        }
+        .slide-in-horizontal.delay {
+            animation-delay: 0.4s;
+        }
+        @keyframes slideInHorizontal {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        /* Make the testimonials section title white */
+        .testimonials .section-title {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar slide-in">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <a href="index.html">
+                    <img src="./logo.png" alt="King Taper Logo" class="logo-img" style="display: block;">
+                </a>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link active">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a href="about.html" class="nav-link">About</a>
+                </li>
+                <li class="nav-item">
+                    <a href="services/hair.html" class="nav-link">Services</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#contact" class="nav-link">Contact</a>
+                </li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero slide-in">
+        <div class="hero-content">
+            <h1 class="hero-title slide-in-horizontal">The Last Hair Bender – Precision Cuts, Personalized Service.</h1>
+            <p class="hero-subtitle slide-in-horizontal delay">Meet King Ngotho — a self-taught barber redefining style in Mombasa 🇰🇪 . From fades to coils, tapers to designs, each cut is crafted to perfection.</p>
+            <div class="hero-buttons">
+                <a href="booking.html" class="btn btn-primary">Book an Appointment</a>
+            </div>
+        </div>
+        <div class="hero-image">
+            <div class="hero-placeholder">
+                <span>🪒</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="services">
+        <div class="container">
+            <h2 class="section-title">Why Choose King Taper?</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">✨</div>
+                    <h3>Premium Quality</h3>
+                    <p>Using only the finest products and tools for exceptional results every time.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">👨‍💼</div>
+                    <h3>Expert Stylists</h3>
+                    <p>Our experienced professionals deliver personalized grooming experiences.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🏆</div>
+                    <h3>Award Winning</h3>
+                    <p>Recognized for excellence in men's grooming and customer satisfaction.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⏰</div>
+                    <h3>Convenient Booking</h3>
+                    <p>Easy online scheduling with flexible appointment times to fit your schedule.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials">
+        <div class="container">
+            <h2 class="section-title">What Our Clients Say</h2>
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p>"Exceptional service and attention to detail. The El Classico package exceeded my expectations."</p>
+                    </div>
+                    <div class="testimonial-author">
+                        <strong>Ahmed K.</strong>
+                        <span>Regular Client</span>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p>"Professional staff and luxurious atmosphere. My go-to place for grooming in Dubai."</p>
+                    </div>
+                    <div class="testimonial-author">
+                        <strong>Mohammed S.</strong>
+                        <span>VIP Member</span>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p>"Great experience for my son. The kids services are fantastic and very professional."</p>
+                    </div>
+                    <div class="testimonial-author">
+                        <strong>Sarah M.</strong>
+                        <span>Parent</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Locations Section -->
+    <section class="locations">
+        <div class="container">
+            <h2 class="section-title">Our Location</h2>
+            <div class="locations-grid">
+                <div class="location-item">
+                    <h3>Mombasa, Kenya</h3>
+                    <p>Private Appointments Available</p>
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3979.8196073775997!2d39.6641!3d-4.0435!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zNMKwMDInMzYuNiJTIDM5wrAzOSc1MC44IkU!5e0!3m2!1sen!2ske!4v1620000000000!5m2!1sen!2ske" width="100%" height="300" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                </div>
+                
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bookings / Contact Section -->
+    <section class="bookings-contact" id="contact">
+        <div class="container">
+            <h2 class="section-title">Bookings / Contact</h2>
+            <div class="contact-info">
+                <p>WhatsApp: <a href="https://wa.me/25457904681">🇰🇪 +254 5790 4681</a> | <a href="https://wa.me/971502718491">🇦🇪 +971 5027 18491</a></p>
+            </div>
+            <div class="contact-form">
+                <form id="contactForm">
+                    <div class="form-group">
+                        <input type="text" id="name" name="name" placeholder="Your Name" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" id="email" name="email" placeholder="Your Email" required>
+                    </div>
+                    <div class="form-group">
+                        <textarea id="message" name="message" placeholder="Your Message" rows="4" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Send Message</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer slide-in">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>King Taper</h3>
+                    <p>Premium grooming services for the modern gentleman.</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="about.html">About</a></li>
+                        <li><a href="services/hair.html">Services</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Services</h4>
+                    <ul>
+                        <li><a href="services/hair.html">Hair Services</a></li>
+                        
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Follow Us</h4>
+                    <div class="social-links">
+                        <a href="#" class="social-link">Facebook</a>
+                        <a href="#" class="social-link">Instagram</a>
+                        <a href="#" class="social-link">Twitter</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 King Taper. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="new.js"></script>
+</body>
+</html>

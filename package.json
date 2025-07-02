@@ -1,0 +1,17 @@
+{
+  "name": "newbuz-backend",
+  "version": "1.0.0",
+  "description": "Backend for King Taper booking email service",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "mysql2": "^3.14.1",
+    "nodemailer": "^6.10.1"
+  }
+}
