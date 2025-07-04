@@ -45,16 +45,30 @@ const ADMIN_PASS = 'admin123'; // Change this in production!
 
 // Save booking endpoint
 app.post('/api/book', (req, res) => {
-  console.log('Received booking request:', req.body);
-
   const { name, email, phone, service, price, date, time, message } = req.body;
-  const sql = 'INSERT INTO bookings (name, email, phone, service, price, date, time, message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-  db.query(sql, [name, email, phone, service, price, date, time, message], (err, result) => {
+  console.log('Booking attempt:', req.body);
+
+  // Check if the slot is already booked
+  const checkSql = 'SELECT COUNT(*) AS count FROM bookings WHERE date = ? AND time = ?';
+  db.query(checkSql, [date, time], (err, results) => {
     if (err) {
-      console.error('Database error:', err);
+      console.error('Database error (checking slot):', err);
       return res.status(500).json({ success: false, error: 'Database error' });
     }
-    res.json({ success: true });
+    if (results[0].count > 0) {
+      console.log('Time slot already booked:', date, time);
+      return res.status(409).json({ success: false, error: 'Time slot already booked' });
+    }
+    // If not booked, insert booking
+    const sql = 'INSERT INTO bookings (name, email, phone, service, price, date, time, message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+    db.query(sql, [name, email, phone, service, price, date, time, message], (err2, result) => {
+      if (err2) {
+        console.error('Database error (inserting booking):', err2);
+        return res.status(500).json({ success: false, error: 'Database error' });
+      }
+      console.log('Booking saved successfully:', result.insertId);
+      res.json({ success: true });
+    });
   });
 });
 

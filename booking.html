@@ -291,6 +291,8 @@
                 <textarea id="message" name="message" rows="4" placeholder="Any special requests or additional information..."></textarea>
             </div>
 
+            <div id="booking-error" style="display:none;color:#ff6b6b;text-align:center;margin-bottom:1rem;font-weight:bold;"></div>
+
             <button type="submit" class="submit-btn">Book Appointment</button>
         </form>
 
@@ -339,40 +341,43 @@
     </footer>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('date').min = today;
+          // Set minimum date to today for date picker
+          const today = new Date().toISOString().split('T')[0];
+          document.getElementById('date').min = today;
         
-            const serviceOptions = document.querySelectorAll('.service-option');
-            const selectedServiceInput = document.getElementById('selectedService');
-            const selectedPriceInput = document.getElementById('selectedPrice');
+          // Service selection logic
+          const serviceOptions = document.querySelectorAll('.service-option');
+          const selectedServiceInput = document.getElementById('selectedService');
+          const selectedPriceInput = document.getElementById('selectedPrice');
         
-            serviceOptions.forEach(option => {
-                option.addEventListener('click', function () {
-                    serviceOptions.forEach(opt => opt.classList.remove('selected'));
-                    this.classList.add('selected');
-                    selectedServiceInput.value = this.dataset.service;
-                    selectedPriceInput.value = this.dataset.price;
-                });
+          serviceOptions.forEach(option => {
+            option.addEventListener('click', function () {
+              serviceOptions.forEach(opt => opt.classList.remove('selected'));
+              this.classList.add('selected');
+              selectedServiceInput.value = this.dataset.service;
+              selectedPriceInput.value = this.dataset.price;
             });
+          });
         
-            document.getElementById('bookingForm').addEventListener('submit', function (e) {
-                e.preventDefault();
+          // Booking form submission
+          document.getElementById('bookingForm').addEventListener('submit', function (e) {
+            e.preventDefault();
         
-                const formData = new FormData(this);
-                const bookingData = {
-                    name: formData.get('firstName') + ' ' + formData.get('lastName'),
-                    email: formData.get('email'),
-                    phone: formData.get('phone'),
-                    service: formData.get('selectedService'),
-                    price: formData.get('selectedPrice'),
-                    date: formData.get('date'),
-                    time: formData.get('time'),
-                    message: formData.get('message')
-                };
+            const formData = new FormData(this);
+            const bookingData = {
+              name: formData.get('firstName') + ' ' + formData.get('lastName'),
+              email: formData.get('email'),
+              phone: formData.get('phone'),
+              service: formData.get('selectedService'),
+              price: formData.get('selectedPrice'),
+              date: formData.get('date'),
+              time: formData.get('time'),
+              message: formData.get('message')
+            };
         
-                console.log('Submitting booking to backend:', bookingData);
+            console.log('Submitting booking to backend:', bookingData);
         
-                const message = `New Booking Request:\n
+            const message = `New Booking Request:\n
         Name: ${bookingData.name}
         Email: ${bookingData.email}
         Phone: ${bookingData.phone}
@@ -381,41 +386,47 @@
         Time: ${bookingData.time}
         Notes: ${bookingData.message || 'None'}`;
         
-                // ✅ Immediately open a new tab (browser won't block it)
-                const waURL = `https://wa.me/254703456797?text=${encodeURIComponent(message)}`;
-                const waTab = window.open('', '_blank');
+            // Open an empty tab immediately to avoid popup blockers
+            const waURL = `https://wa.me/254703456797?text=${encodeURIComponent(message)}`;
+            const waTab = window.open('', '_blank');
         
-                // ✅ Save to backend
-                fetch('http://localhost:3001/api/book', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(bookingData)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        console.log('Booking saved to database.');
-                        waTab.location = waURL; // 🔁 Set the URL after success
-        
-                        document.getElementById('successMessage').style.display = 'block';
-                        document.getElementById('bookingForm').reset();
-                        serviceOptions.forEach(opt => opt.classList.remove('selected'));
-                        selectedServiceInput.value = '';
-                        selectedPriceInput.value = '';
-                    } else {
-                        alert('Booking failed to save.');
-                        console.error(data.error);
-                        waTab.close(); // Close the tab if saving failed
-                    }
-                })
-                .catch(error => {
-                    alert('Server error. Could not save booking.');
-                    console.error(error);
-                    waTab.close();
-                });
+            fetch('https://king-taper-production.up.railway.app/api/book', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(bookingData)
+            })
+            .then(response => response.json())
+            .then(data => {
+              if (data.success) {
+                console.log('Booking saved to database.');
+                waTab.location = waURL; // Open WhatsApp only if booking is successful
+                document.getElementById('successMessage').style.display = 'block';
+                document.getElementById('booking-error').style.display = 'none';
+                // Reset form and selection styles
+                this.reset();
+                serviceOptions.forEach(opt => opt.classList.remove('selected'));
+                selectedServiceInput.value = '';
+                selectedPriceInput.value = '';
+              } else {
+                if (data.error === 'Time slot already booked') {
+                  document.getElementById('booking-error').textContent = 'Sorry, that time slot is already booked. Please choose another time.';
+                  document.getElementById('booking-error').style.display = 'block';
+                } else {
+                  alert('Booking failed to save.');
+                }
+                waTab.close(); // Close WhatsApp tab if booking fails
+              }
+            })
+            .catch(error => {
+              alert('Server error. Could not save booking.');
+              console.error(error);
+              waTab.close();
             });
+          });
         });
         </script>
+        
+        
         
 
     

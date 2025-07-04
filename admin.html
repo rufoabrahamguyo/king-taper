@@ -209,10 +209,10 @@
         loginForm.addEventListener('submit', function (e) {
             e.preventDefault();
             loginError.style.display = 'none';
-            fetch('http://localhost:3001/api/admin/login', {
+            fetch('https://king-taper-production.up.railway.app/api/admin/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include', // ✅ ensures session is stored
+                credentials: 'include', // preserve session cookie
                 body: JSON.stringify({
                     username: document.getElementById('admin-username').value,
                     password: document.getElementById('admin-password').value
@@ -234,9 +234,9 @@
         });
     
         logoutBtn.addEventListener('click', function () {
-            fetch('http://localhost:3001/api/admin/logout', {
+            fetch('https://king-taper-production.up.railway.app/api/admin/logout', {
                 method: 'POST',
-                credentials: 'include' // ✅ so session clears
+                credentials: 'include'
             }).then(() => {
                 showLogin();
             });
@@ -244,8 +244,8 @@
     
         function fetchBookings() {
             bookingsTableBody.innerHTML = '<tr><td colspan="10">Loading...</td></tr>';
-            fetch('http://localhost:3001/api/admin/bookings', {
-                credentials: 'include' // ✅ use session cookie
+            fetch('https://king-taper-production.up.railway.app/api/admin/bookings', {
+                credentials: 'include'
             })
             .then(res => {
                 if (res.status === 401) throw new Error('Unauthorized');
@@ -281,14 +281,12 @@
         }
     
         // Auto-login check
-        fetch('http://localhost:3001/api/admin/bookings', {
+        fetch('https://king-taper-production.up.railway.app/api/admin/bookings', {
             credentials: 'include'
         })
         .then(res => {
             if (res.status === 200) showDashboard();
         });
-    </script>
-    
-    
+    </script>   
 </body>
 </html> 
