@@ -7,31 +7,30 @@ const session = require('express-session');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// ✅ Correct CORS with credentials support for your admin frontend
+// CORS setup — update origin to your Netlify frontend URL
 app.use(cors({
-  origin: 'http://localhost:49937',
+  origin: 'https://jade-travesseiro-478a89.netlify.app',
   credentials: true
 }));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// ✅ Session middleware (needed for admin login)
+// Session middleware for admin login
 app.use(session({
   secret: 'your_secret_key',
   resave: false,
   saveUninitialized: true
 }));
 
-
-// MySQL setup
+// MySQL connection using Railway environment variables
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'Taper@123',       // 👈 empty string since no password
-  database: 'king_taper'
+  host: process.env.MYSQLHOST,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD,
+  database: process.env.MYSQLDATABASE,
+  port: process.env.MYSQLPORT || 3306
 });
-
 
 db.connect((err) => {
   if (err) {
@@ -46,19 +45,18 @@ const ADMIN_PASS = 'admin123'; // Change this in production!
 
 // Save booking endpoint
 app.post('/api/book', (req, res) => {
-  console.log('Received booking request:', req.body);  // Add this line
+  console.log('Received booking request:', req.body);
 
   const { name, email, phone, service, price, date, time, message } = req.body;
   const sql = 'INSERT INTO bookings (name, email, phone, service, price, date, time, message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
   db.query(sql, [name, email, phone, service, price, date, time, message], (err, result) => {
     if (err) {
-      console.error('Database error:', err);  // Add detailed logging
+      console.error('Database error:', err);
       return res.status(500).json({ success: false, error: 'Database error' });
     }
     res.json({ success: true });
   });
 });
-
 
 // Admin login endpoint
 app.post('/api/admin/login', (req, res) => {
@@ -93,4 +91,4 @@ app.get('/api/admin/bookings', (req, res) => {
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-}); 
+});
