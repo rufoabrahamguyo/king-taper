@@ -1,3 +1,5 @@
+require('dotenv').config();  // Load .env variables
+
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
@@ -6,6 +8,15 @@ const session = require('express-session');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+
+// Debug print of DB config (never print passwords in production logs)
+console.log('DB Config:', {
+  host: process.env.MYSQLHOST,
+  user: process.env.MYSQLUSER,
+  password: process.env.MYSQLPASSWORD ? '******' : undefined,
+  database: process.env.MYSQLDATABASE,
+  port: process.env.MYSQLPORT || 3306
+});
 
 // CORS setup — update origin to your Netlify frontend URL
 app.use(cors({
@@ -23,7 +34,7 @@ app.use(session({
   saveUninitialized: true
 }));
 
-// MySQL connection using Railway environment variables
+// MySQL connection using environment variables
 const db = mysql.createConnection({
   host: process.env.MYSQLHOST,
   user: process.env.MYSQLUSER,
