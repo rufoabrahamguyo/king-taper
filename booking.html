@@ -376,6 +376,7 @@
             };
         
             console.log('Submitting booking to backend:', bookingData);
+            console.log('Server URL:', 'http://localhost:3001/api/book');
         
             const message = `New Booking Request:\n
         Name: ${bookingData.name}
@@ -390,13 +391,18 @@
             const waURL = `https://wa.me/254703456797?text=${encodeURIComponent(message)}`;
             const waTab = window.open('', '_blank');
         
-            fetch('https://king-taper-production.up.railway.app/api/book', {
+            fetch('http://localhost:3001/api/book', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(bookingData)
             })
-            .then(response => response.json())
+            .then(response => {
+              console.log('Response status:', response.status);
+              console.log('Response headers:', response.headers);
+              return response.json();
+            })
             .then(data => {
+              console.log('Response data:', data);
               if (data.success) {
                 console.log('Booking saved to database.');
                 waTab.location = waURL; // Open WhatsApp only if booking is successful
@@ -418,8 +424,8 @@
               }
             })
             .catch(error => {
-              alert('Server error. Could not save booking.');
-              console.error(error);
+              console.error('Fetch error:', error);
+              alert('Server error. Could not save booking. Please check the console for details.');
               waTab.close();
             });
           });

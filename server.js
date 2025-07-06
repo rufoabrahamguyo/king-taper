@@ -18,9 +18,9 @@ console.log('DB Config:', {
   port: process.env.MYSQLPORT || 3306
 });
 
-// CORS setup — update origin to your Netlify frontend URL
+// CORS setup — allow local development
 app.use(cors({
-  origin: 'https://jade-travesseiro-478a89.netlify.app',
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'file://', 'https://jade-travesseiro-478a89.netlify.app'],
   credentials: true
 }));
 
@@ -58,6 +58,7 @@ const ADMIN_PASS = 'admin123'; // Change this in production!
 app.post('/api/book', (req, res) => {
   const { name, email, phone, service, price, date, time, message } = req.body;
   console.log('Booking attempt:', req.body);
+  console.log('Request headers:', req.headers);
 
   // Check if the slot is already booked
   const checkSql = 'SELECT COUNT(*) AS count FROM bookings WHERE date = ? AND time = ?';
