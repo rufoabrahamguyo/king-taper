@@ -22,8 +22,13 @@ console.log('DB Config:', {
 
 // CORS setup — allow production and local development
 app.use(cors({
-  origin: [FRONTEND_URL, 'http://localhost:3000', 'http://127.0.0.1:3000'], // Allow your frontend URLs + localhost for dev
-  credentials: true // Required to allow cookies to be sent cross-origin
+  origin: [
+    'https://jade-travesseiro-478a89.netlify.app', // Netlify frontend
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+    'http://127.0.0.1:3002'
+  ],
+  credentials: true
 }));
 
 app.use(bodyParser.json());
