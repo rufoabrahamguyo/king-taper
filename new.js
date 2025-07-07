@@ -135,7 +135,7 @@ if (document.getElementById('admin-dashboard-section')) {
   const clearFilterBtn = document.getElementById('clear-filter-btn');
 
   async function fetchBookings(start, end) {
-    let url = `${API_BASE_URL}/api/admin/bookings`;
+    let url = `${window.API_BASE_URL}/api/admin/bookings`;
     const params = [];
     if (start) params.push(`start=${encodeURIComponent(start)}`);
     if (end) params.push(`end=${encodeURIComponent(end)}`);
@@ -169,7 +169,7 @@ if (document.getElementById('admin-dashboard-section')) {
       btn.addEventListener('click', async function() {
         if (confirm('Are you sure you want to delete this booking?')) {
           const id = btn.getAttribute('data-id');
-          const res = await fetch(`${API_BASE_URL}/api/admin/bookings/${id}`, {
+          const res = await fetch(`${window.API_BASE_URL}/api/admin/bookings/${id}`, {
             method: 'DELETE',
             credentials: 'include'
           });
