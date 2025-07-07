@@ -57,8 +57,8 @@ db.connect((err) => {
   }
 });
 
-const ADMIN_USER = 'admin';
-const ADMIN_PASS = 'admin123'; // Change this in production!
+const ADMIN_USER = 'kingtaper';
+const ADMIN_PASS = 'taper@2024'; // Change this in production!
 
 // Save booking endpoint
 app.post('/api/book', (req, res) => {
