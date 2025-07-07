@@ -129,6 +129,14 @@
         </div>
         <div id="admin-dashboard-section" style="display:none;">
             <button class="logout-btn" id="logout-btn">Logout</button>
+            <div style="margin-bottom: 1rem;">
+                <label for="filter-start">Start Date:</label>
+                <input type="date" id="filter-start">
+                <label for="filter-end">End Date:</label>
+                <input type="date" id="filter-end">
+                <button id="filter-btn">Filter</button>
+                <button id="clear-filter-btn">Clear</button>
+            </div>
             <table class="admin-table" id="bookings-table">
                 <thead>
                     <tr>
@@ -142,6 +150,7 @@
                         <th>Time</th>
                         <th>Notes</th>
                         <th>Created At</th>
+                        <th>Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -268,6 +277,7 @@
                                 <td>${b.time}</td>
                                 <td>${b.message || ''}</td>
                                 <td>${b.created_at ? new Date(b.created_at).toLocaleString() : ''}</td>
+                                <td><button class="delete-btn" data-id="${b.id}">Delete</button></td>
                             </tr>
                         `).join('');
                     }

@@ -34,9 +34,13 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 // Session middleware for admin login
 app.use(session({
-  secret: 'your_secret_key',
+  secret: process.env.SESSION_SECRET || 'your_secret_key',
   resave: false,
-  saveUninitialized: true
+  saveUninitialized: true,
+  cookie: {
+    sameSite: 'none', // Allow cross-site cookies
+    secure: true      // Only send cookie over HTTPS
+  }
 }));
 
 // MySQL connection using environment variables
@@ -106,17 +110,40 @@ app.post('/api/admin/logout', (req, res) => {
   res.json({ success: true });
 });
 
-// Get bookings (protected)
+// Get bookings with optional date filter (protected)
 app.get('/api/admin/bookings', (req, res) => {
   if (!req.session.admin) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
-  db.query('SELECT * FROM bookings ORDER BY created_at DESC', (err, results) => {
+  const { start, end } = req.query;
+  let sql = 'SELECT * FROM bookings';
+  let params = [];
+  if (start && end) {
+    sql += ' WHERE date BETWEEN ? AND ?';
+    params = [start, end];
+  }
+  sql += ' ORDER BY created_at DESC';
+  db.query(sql, params, (err, results) => {
     if (err) {
       console.error(err);
       return res.status(500).json({ success: false, error: 'Database error' });
     }
     res.json({ success: true, bookings: results });
+  });
+});
+
+// Delete a booking (protected)
+app.delete('/api/admin/bookings/:id', (req, res) => {
+  if (!req.session.admin) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+  const { id } = req.params;
+  db.query('DELETE FROM bookings WHERE id = ?', [id], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, error: 'Database error' });
+    }
+    res.json({ success: true });
   });
 });
 

@@ -125,3 +125,75 @@ document.addEventListener('DOMContentLoaded', function() {
   window.addEventListener('scroll', revealOnScroll);
   revealOnScroll();
 });
+
+// Admin dashboard logic
+if (document.getElementById('admin-dashboard-section')) {
+  const bookingsTableBody = document.querySelector('#bookings-table tbody');
+  const filterStart = document.getElementById('filter-start');
+  const filterEnd = document.getElementById('filter-end');
+  const filterBtn = document.getElementById('filter-btn');
+  const clearFilterBtn = document.getElementById('clear-filter-btn');
+
+  async function fetchBookings(start, end) {
+    let url = '/api/admin/bookings';
+    const params = [];
+    if (start) params.push(`start=${encodeURIComponent(start)}`);
+    if (end) params.push(`end=${encodeURIComponent(end)}`);
+    if (params.length) url += '?' + params.join('&');
+    const res = await fetch(url, { credentials: 'include' });
+    const data = await res.json();
+    if (data.success) {
+      renderBookings(data.bookings);
+    } else {
+      bookingsTableBody.innerHTML = `<tr><td colspan='11'>Failed to load bookings</td></tr>`;
+    }
+  }
+
+  function renderBookings(bookings) {
+    bookingsTableBody.innerHTML = bookings.map(b => `
+      <tr>
+        <td>${b.id}</td>
+        <td>${b.name}</td>
+        <td>${b.email}</td>
+        <td>${b.phone}</td>
+        <td>${b.service}</td>
+        <td>${b.price}</td>
+        <td>${b.date}</td>
+        <td>${b.time}</td>
+        <td>${b.message || ''}</td>
+        <td>${b.created_at ? new Date(b.created_at).toLocaleString() : ''}</td>
+        <td><button class="delete-btn" data-id="${b.id}">Delete</button></td>
+      </tr>
+    `).join('');
+    // Attach delete handlers
+    document.querySelectorAll('.delete-btn').forEach(btn => {
+      btn.addEventListener('click', async function() {
+        if (confirm('Are you sure you want to delete this booking?')) {
+          const id = btn.getAttribute('data-id');
+          const res = await fetch(`/api/admin/bookings/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+          });
+          const data = await res.json();
+          if (data.success) {
+            fetchBookings(filterStart.value, filterEnd.value);
+          } else {
+            alert('Failed to delete booking');
+          }
+        }
+      });
+    });
+  }
+
+  filterBtn.addEventListener('click', function() {
+    fetchBookings(filterStart.value, filterEnd.value);
+  });
+  clearFilterBtn.addEventListener('click', function() {
+    filterStart.value = '';
+    filterEnd.value = '';
+    fetchBookings();
+  });
+
+  // Initial load
+  fetchBookings();
+}
