@@ -149,7 +149,6 @@
                         <th>Date</th>
                         <th>Time</th>
                         <th>Notes</th>
-                        <th>Created At</th>
                         <th>Action</th>
                     </tr>
                 </thead>
@@ -276,7 +275,6 @@
                                 <td>${b.date}</td>
                                 <td>${b.time}</td>
                                 <td>${b.message || ''}</td>
-                                <td>${b.created_at ? new Date(b.created_at).toLocaleString() : ''}</td>
                                 <td><button class="delete-btn" data-id="${b.id}">Delete</button></td>
                             </tr>
                         `).join('');

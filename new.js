@@ -126,6 +126,11 @@ document.addEventListener('DOMContentLoaded', function() {
   revealOnScroll();
 });
 
+// Set API base URL for admin dashboard
+const API_BASE_URL = window.location.hostname.includes('netlify.app')
+  ? 'https://king-taper-production.up.railway.app'
+  : 'http://localhost:3001';
+
 // Admin dashboard logic
 if (document.getElementById('admin-dashboard-section')) {
   const bookingsTableBody = document.querySelector('#bookings-table tbody');
@@ -135,7 +140,7 @@ if (document.getElementById('admin-dashboard-section')) {
   const clearFilterBtn = document.getElementById('clear-filter-btn');
 
   async function fetchBookings(start, end) {
-    let url = '/api/admin/bookings';
+    let url = `${API_BASE_URL}/api/admin/bookings`;
     const params = [];
     if (start) params.push(`start=${encodeURIComponent(start)}`);
     if (end) params.push(`end=${encodeURIComponent(end)}`);
@@ -145,7 +150,7 @@ if (document.getElementById('admin-dashboard-section')) {
     if (data.success) {
       renderBookings(data.bookings);
     } else {
-      bookingsTableBody.innerHTML = `<tr><td colspan='11'>Failed to load bookings</td></tr>`;
+      bookingsTableBody.innerHTML = `<tr><td colspan='10'>Failed to load bookings</td></tr>`;
     }
   }
 
@@ -161,7 +166,6 @@ if (document.getElementById('admin-dashboard-section')) {
         <td>${b.date}</td>
         <td>${b.time}</td>
         <td>${b.message || ''}</td>
-        <td>${b.created_at ? new Date(b.created_at).toLocaleString() : ''}</td>
         <td><button class="delete-btn" data-id="${b.id}">Delete</button></td>
       </tr>
     `).join('');
@@ -170,7 +174,7 @@ if (document.getElementById('admin-dashboard-section')) {
       btn.addEventListener('click', async function() {
         if (confirm('Are you sure you want to delete this booking?')) {
           const id = btn.getAttribute('data-id');
-          const res = await fetch(`/api/admin/bookings/${id}`, {
+          const res = await fetch(`${API_BASE_URL}/api/admin/bookings/${id}`, {
             method: 'DELETE',
             credentials: 'include'
           });

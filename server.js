@@ -8,6 +8,8 @@ const session = require('express-session');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Debug print of DB config (never print passwords in production logs)
 console.log('DB Config:', {
@@ -20,13 +22,8 @@ console.log('DB Config:', {
 
 // CORS setup — allow production and local development
 app.use(cors({
-  origin: [
-    'https://jade-travesseiro-478a89.netlify.app',
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3002'
-  ],
-  credentials: true
+  origin: [FRONTEND_URL, 'http://localhost:3000', 'http://127.0.0.1:3000'], // Allow your frontend URLs + localhost for dev
+  credentials: true // Required to allow cookies to be sent cross-origin
 }));
 
 app.use(bodyParser.json());
@@ -38,8 +35,8 @@ app.use(session({
   resave: false,
   saveUninitialized: true,
   cookie: {
-    sameSite: 'none', // Allow cross-site cookies
-    secure: true      // Only send cookie over HTTPS
+    sameSite: NODE_ENV === 'production' ? 'none' : 'lax', // Use 'none' in production for cross-site cookie
+    secure: NODE_ENV === 'production' // true means cookies only sent over HTTPS in prod
   }
 }));
 
