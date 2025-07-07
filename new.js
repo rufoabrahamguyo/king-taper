@@ -126,11 +126,6 @@ document.addEventListener('DOMContentLoaded', function() {
   revealOnScroll();
 });
 
-// Set API base URL for admin dashboard
-const API_BASE_URL = window.location.hostname.includes('netlify.app')
-  ? 'https://king-taper-production.up.railway.app'
-  : 'http://localhost:3001';
-
 // Admin dashboard logic
 if (document.getElementById('admin-dashboard-section')) {
   const bookingsTableBody = document.querySelector('#bookings-table tbody');
