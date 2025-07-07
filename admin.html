@@ -194,12 +194,13 @@
             </div>
         </div>
     </footer>
-    <script src="new.js"></script>
     <script>
-        // Set API base URL for admin dashboard (global)
         window.API_BASE_URL = window.location.hostname.includes('netlify.app')
           ? 'https://king-taper-production.up.railway.app'
           : 'http://localhost:3001';
+    </script>
+    <script src="new.js"></script>
+    <script>
         const loginSection = document.getElementById('admin-login-section');
         const dashboardSection = document.getElementById('admin-dashboard-section');
         const loginForm = document.getElementById('admin-login-form');
