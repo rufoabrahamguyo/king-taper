@@ -51,9 +51,9 @@ const db = mysql.createConnection({
 
 db.connect((err) => {
   if (err) {
-    console.error('MySQL connection error:', err);
+    console.error('🚫 MySQL Connection Failed:', err);
   } else {
-    console.log('Connected to MySQL');
+    console.log('✅ Connected to MySQL Database');
   }
 });
 
@@ -63,30 +63,38 @@ const ADMIN_PASS = 'admin123'; // Change this in production!
 // Save booking endpoint
 app.post('/api/book', (req, res) => {
   const { name, email, phone, service, price, date, time, message } = req.body;
-  console.log('Booking attempt:', req.body);
-  console.log('Request headers:', req.headers);
 
-  // Check if the slot is already booked
-  const checkSql = 'SELECT COUNT(*) AS count FROM bookings WHERE date = ? AND time = ?';
-  db.query(checkSql, [date, time], (err, results) => {
-    if (err) {
-      console.error('Database error (checking slot):', err);
-      return res.status(500).json({ success: false, error: 'Database error' });
-    }
-    if (results[0].count > 0) {
-      console.log('Time slot already booked:', date, time);
-      return res.status(409).json({ success: false, error: 'Time slot already booked' });
-    }
-    // If not booked, insert booking
-    const sql = 'INSERT INTO bookings (name, email, phone, service, price, date, time, message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
-    db.query(sql, [name, email, phone, service, price, date, time, message], (err2, result) => {
-      if (err2) {
-        console.error('Database error (inserting booking):', err2);
-        return res.status(500).json({ success: false, error: 'Database error' });
+  console.log('📥 Incoming booking data:', req.body);  // Log received data
+
+  const query = `
+    INSERT INTO bookings (name, email, phone, service, price, date, time, message)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  db.query(
+    query,
+    [name, email, phone, service, price, date, time, message],
+    (err, results) => {
+      if (err) {
+        console.error('❌ DB Insert Error:', err);  // Log DB errors
+        return res.json({ success: false, error: err.message });
       }
-      console.log('Booking saved successfully:', result.insertId);
-      res.json({ success: true });
-    });
+
+      console.log('✅ Booking saved successfully:', results);  // Log successful insert
+      return res.json({ success: true });
+    }
+  );
+});
+
+// Temporary debug endpoint to view all bookings
+app.get('/api/bookings/debug', (req, res) => {
+  db.query('SELECT * FROM bookings ORDER BY id DESC', (err, results) => {
+    if (err) {
+      console.error('❌ Fetch bookings error:', err);
+      return res.status(500).json({ error: 'DB fetch failed' });
+    }
+    console.log('📊 Current bookings:', results);
+    res.json(results);
   });
 });
 
