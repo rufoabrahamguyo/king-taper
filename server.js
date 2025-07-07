@@ -22,12 +22,7 @@ console.log('DB Config:', {
 
 // CORS setup — allow production and local development
 app.use(cors({
-  origin: [
-    'https://jade-travesseiro-478a89.netlify.app', // Netlify frontend
-    'http://localhost:3000',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:3002'
-  ],
+  origin: ['https://jade-travesseiro-478a89.netlify.app'],
   credentials: true
 }));
 
@@ -40,8 +35,8 @@ app.use(session({
   resave: false,
   saveUninitialized: true,
   cookie: {
-    sameSite: NODE_ENV === 'production' ? 'none' : 'lax', // Use 'none' in production for cross-site cookie
-    secure: NODE_ENV === 'production' // true means cookies only sent over HTTPS in prod
+    sameSite: NODE_ENV === 'production' ? 'none' : 'lax',
+    secure: NODE_ENV === 'production'
   }
 }));
 

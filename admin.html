@@ -224,7 +224,7 @@
             fetch(`${API_BASE_URL}/api/admin/login`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                credentials: 'include', // preserve session cookie
+                credentials: 'include',
                 body: JSON.stringify({
                     username: document.getElementById('admin-username').value,
                     password: document.getElementById('admin-password').value
