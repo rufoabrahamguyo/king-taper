@@ -152,3 +152,5 @@ app.delete('/api/admin/bookings/:id', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// NOTE: For production, set NODE_ENV=production and SESSION_SECRET in Railway environment variables.
