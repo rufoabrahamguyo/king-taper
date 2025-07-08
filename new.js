@@ -193,6 +193,79 @@ if (document.getElementById('admin-dashboard-section')) {
     }
   }
 
+  // Modal elements
+  const bookingModal = document.getElementById('booking-modal');
+  const closeBookingModalBtn = document.getElementById('close-booking-modal');
+  const editBookingForm = document.getElementById('edit-booking-form');
+  const modalBookingId = document.getElementById('modal-booking-id');
+  const modalName = document.getElementById('modal-name');
+  const modalEmail = document.getElementById('modal-email');
+  const modalPhone = document.getElementById('modal-phone');
+  const modalService = document.getElementById('modal-service');
+  const modalPrice = document.getElementById('modal-price');
+  const modalDate = document.getElementById('modal-date');
+  const modalTime = document.getElementById('modal-time');
+  const modalMessage = document.getElementById('modal-message');
+  const modalTitle = document.getElementById('modal-title');
+
+  function openBookingModal(booking, editable) {
+    bookingModal.style.display = 'flex';
+    modalBookingId.value = booking.id;
+    modalName.value = booking.name;
+    modalEmail.value = booking.email;
+    modalPhone.value = booking.phone;
+    modalService.value = booking.service;
+    modalPrice.value = booking.price;
+    modalDate.value = booking.date;
+    modalTime.value = booking.time;
+    modalMessage.value = booking.message || '';
+    modalTitle.textContent = editable ? 'Edit Booking' : 'Booking Details';
+    // Enable/disable fields
+    [modalName, modalEmail, modalPhone, modalService, modalPrice, modalDate, modalTime, modalMessage].forEach(input => {
+      input.disabled = !editable;
+    });
+    document.getElementById('save-booking-btn').style.display = editable ? '' : 'none';
+  }
+
+  function closeBookingModal() {
+    bookingModal.style.display = 'none';
+  }
+
+  if (closeBookingModalBtn) closeBookingModalBtn.onclick = closeBookingModal;
+  if (bookingModal) bookingModal.onclick = function(e) { if (e.target === bookingModal) closeBookingModal(); };
+
+  // Handle edit form submit
+  if (editBookingForm) {
+    editBookingForm.onsubmit = async function(e) {
+      e.preventDefault();
+      const id = modalBookingId.value;
+      const updated = {
+        name: modalName.value,
+        email: modalEmail.value,
+        phone: modalPhone.value,
+        service: modalService.value,
+        price: modalPrice.value,
+        date: modalDate.value,
+        time: modalTime.value,
+        message: modalMessage.value
+      };
+      const res = await fetch(`${window.API_BASE_URL}/api/admin/bookings/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(updated)
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeBookingModal();
+        fetchBookings(filterStart.value, filterEnd.value);
+      } else {
+        alert('Failed to update booking');
+      }
+    };
+  }
+
+  // Enhance renderBookings to add view/edit handlers
   function renderBookings(bookings) {
     bookingsTableBody.innerHTML = bookings.map(b => `
       <tr>
@@ -205,10 +278,28 @@ if (document.getElementById('admin-dashboard-section')) {
         <td>${b.date}</td>
         <td>${b.time}</td>
         <td>${b.message || ''}</td>
-        <td><button class="delete-btn" data-id="${b.id}">Delete</button></td>
+        <td>
+          <button class="view-btn" data-id="${b.id}">View</button>
+          <button class="edit-btn" data-id="${b.id}">Edit</button>
+          <button class="delete-btn" data-id="${b.id}">Delete</button>
+        </td>
       </tr>
     `).join('');
-    // Attach delete handlers
+    // Attach view/edit/delete handlers
+    document.querySelectorAll('.view-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const id = btn.getAttribute('data-id');
+        const booking = bookings.find(b => b.id == id);
+        openBookingModal(booking, false);
+      });
+    });
+    document.querySelectorAll('.edit-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const id = btn.getAttribute('data-id');
+        const booking = bookings.find(b => b.id == id);
+        openBookingModal(booking, true);
+      });
+    });
     document.querySelectorAll('.delete-btn').forEach(btn => {
       btn.addEventListener('click', async function() {
         if (confirm('Are you sure you want to delete this booking?')) {

@@ -153,6 +153,23 @@ app.delete('/api/admin/bookings/:id', (req, res) => {
   });
 });
 
+// Edit (update) a booking (protected)
+app.put('/api/admin/bookings/:id', (req, res) => {
+  if (!req.session.admin) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+  const { id } = req.params;
+  const { name, email, phone, service, price, date, time, message } = req.body;
+  const sql = 'UPDATE bookings SET name=?, email=?, phone=?, service=?, price=?, date=?, time=?, message=? WHERE id=?';
+  db.query(sql, [name, email, phone, service, price, date, time, message, id], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).json({ success: false, error: 'Database error' });
+    }
+    res.json({ success: true });
+  });
+});
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });

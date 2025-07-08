@@ -157,6 +157,25 @@
                 </tbody>
             </table>
         </div>
+        <!-- Booking Details/Edit Modal -->
+        <div id="booking-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+          <div style="background:#fff; padding:2rem; border-radius:8px; max-width:500px; margin:auto; position:relative;">
+            <button id="close-booking-modal" style="position:absolute; top:1rem; right:1rem; font-size:1.5rem; background:none; border:none; cursor:pointer;">&times;</button>
+            <h2 id="modal-title">Booking Details</h2>
+            <form id="edit-booking-form">
+              <input type="hidden" id="modal-booking-id">
+              <div class="form-group"><label>Name</label><input type="text" id="modal-name" required></div>
+              <div class="form-group"><label>Email</label><input type="email" id="modal-email" required></div>
+              <div class="form-group"><label>Phone</label><input type="text" id="modal-phone"></div>
+              <div class="form-group"><label>Service</label><input type="text" id="modal-service"></div>
+              <div class="form-group"><label>Price</label><input type="number" id="modal-price"></div>
+              <div class="form-group"><label>Date</label><input type="date" id="modal-date" required></div>
+              <div class="form-group"><label>Time</label><input type="text" id="modal-time" required></div>
+              <div class="form-group"><label>Notes</label><textarea id="modal-message"></textarea></div>
+              <button type="submit" id="save-booking-btn">Save Changes</button>
+            </form>
+          </div>
+        </div>
     </div>
     <footer class="footer">
         <div class="container">
@@ -219,6 +238,7 @@
             dashboardSection.style.display = 'none';
         }
     
+
         loginForm.addEventListener('submit', function (e) {
             e.preventDefault();
             loginError.style.display = 'none';
@@ -280,7 +300,11 @@
                                 <td>${b.date}</td>
                                 <td>${b.time}</td>
                                 <td>${b.message || ''}</td>
-                                <td><button class="delete-btn" data-id="${b.id}">Delete</button></td>
+                                <td>
+                                    <button class="view-btn" data-id="${b.id}">View</button>
+                                    <button class="edit-btn" data-id="${b.id}">Edit</button>
+                                    <button class="delete-btn" data-id="${b.id}">Delete</button>
+                                </td>
                             </tr>
                         `).join('');
                     }
