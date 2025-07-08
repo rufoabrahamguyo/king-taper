@@ -22,7 +22,7 @@ console.log('DB Config:', {
 
 // CORS setup — allow production and local development
 app.use(cors({
-  origin: ['https://jade-travesseiro-478a89.netlify.app'],
+  origin: [FRONTEND_URL, 'http://localhost:3000'],
   credentials: true
 }));
 
@@ -127,7 +127,7 @@ app.get('/api/admin/bookings', (req, res) => {
     sql += ' WHERE date BETWEEN ? AND ?';
     params = [start, end];
   }
-  sql += ' ORDER BY created_at DESC';
+  sql += ' ORDER BY id DESC';
   db.query(sql, params, (err, results) => {
     if (err) {
       console.error(err);
