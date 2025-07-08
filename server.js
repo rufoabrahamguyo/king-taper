@@ -111,32 +111,61 @@ app.post('/api/admin/login', (req, res) => {
 });
 
 // Admin logout
-app.post('/api/admin/logout', (req, res) => {
-  req.session.destroy();
-  res.json({ success: true });
-});
-
-// Get bookings with optional date filter (protected)
-app.get('/api/admin/bookings', (req, res) => {
-  if (!req.session.admin) {
-    return res.status(401).json({ success: false, error: 'Unauthorized' });
-  }
-  const { start, end } = req.query;
-  let sql = 'SELECT * FROM bookings';
-  let params = [];
-  if (start && end) {
-    sql += ' WHERE date BETWEEN ? AND ?';
-    params = [start, end];
-  }
-  sql += ' ORDER BY id DESC';
-  db.query(sql, params, (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ success: false, error: 'Database error' });
-    }
-    res.json({ success: true, bookings: results });
+// Logout button
+logoutBtn.addEventListener('click', function() {
+  fetch(`${window.API_BASE_URL}/api/admin/logout`, {
+      method: 'POST',
+      credentials: 'include'
+  }).then(() => {
+      showLogin();
   });
 });
+
+// Fetch bookings
+function fetchBookings() {
+  bookingsTableBody.innerHTML = '<tr><td colspan="10">Loading...</td></tr>';
+  
+  fetch(`${window.API_BASE_URL}/api/admin/bookings`, {
+      credentials: 'include'
+  })
+  .then(res => {
+      if (res.status === 401) throw new Error('Unauthorized');
+      return res.json();
+  })
+  .then(data => {
+      if (data.success) {
+          if (data.bookings.length === 0) {
+              bookingsTableBody.innerHTML = '<tr><td colspan="10">No bookings found</td></tr>';
+          } else {
+              bookingsTableBody.innerHTML = data.bookings.map(booking => `
+                  <tr>
+                      <td>${booking.id}</td>
+                      <td>${booking.name}</td>
+                      <td>${booking.email}</td>
+                      <td>${booking.phone}</td>
+                      <td>${booking.service}</td>
+                      <td>${booking.price}</td>
+                      <td>${booking.date}</td>
+                      <td>${booking.time}</td>
+                      <td>${booking.notes || ''}</td>
+                      <td>
+                          <button class="edit-btn" data-id="${booking.id}">Edit</button>
+                          <button class="delete-btn" data-id="${booking.id}">Delete</button>
+                      </td>
+                  </tr>
+              `).join('');
+          }
+      }
+  })
+  .catch(error => {
+      console.error('Error fetching bookings:', error);
+      if (error.message === 'Unauthorized') {
+          showLogin();
+      } else {
+          bookingsTableBody.innerHTML = '<tr><td colspan="10">Error loading data</td></tr>';
+      }
+  });
+}
 
 // Delete a booking (protected)
 app.delete('/api/admin/bookings/:id', (req, res) => {
