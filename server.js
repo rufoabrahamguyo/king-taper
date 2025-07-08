@@ -5,13 +5,11 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const mysql = require('mysql2');
 const session = require('express-session');
-const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 const NODE_ENV = process.env.NODE_ENV || 'development';
-const JWT_SECRET = process.env.JWT_SECRET || 'pick-a-long-random-string';
 
 // Debug print of DB config (never print passwords in production logs)
 console.log('DB Config:', {
@@ -101,35 +99,28 @@ app.get('/api/bookings/debug', (req, res) => {
   });
 });
 
-// Admin login endpoint (JWT)
+// Admin login endpoint (session)
 app.post('/api/admin/login', (req, res) => {
   const { username, password } = req.body;
   if (username === ADMIN_USER && password === ADMIN_PASS) {
-    // sign a 2-hour token
-    const token = jwt.sign({ admin: true }, JWT_SECRET, { expiresIn: '2h' });
-    return res.json({ success: true, token });
+    req.session.admin = true;
+    res.json({ success: true });
+  } else {
+    res.status(401).json({ success: false, error: 'Invalid credentials' });
   }
-  res.status(401).json({ success: false, error: 'Invalid credentials' });
 });
 
-// JWT auth middleware
-function checkToken(req, res, next) {
-  const auth = req.headers.authorization || '';
-  const [scheme, token] = auth.split(' ');
-  if (scheme !== 'Bearer' || !token) {
-    return res.status(401).json({ success: false, error: 'No token' });
-  }
-  try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    if (!payload.admin) throw new Error();
-    next();
-  } catch {
-    return res.status(401).json({ success: false, error: 'Invalid token' });
-  }
-}
+// Admin logout
+app.post('/api/admin/logout', (req, res) => {
+  req.session.destroy();
+  res.json({ success: true });
+});
 
-// Protect bookings endpoint with JWT
-app.get('/api/admin/bookings', checkToken, (req, res) => {
+// Get bookings with optional date filter (protected)
+app.get('/api/admin/bookings', (req, res) => {
+  if (!req.session.admin) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
   const { start, end } = req.query;
   let sql = 'SELECT * FROM bookings';
   let params = [];

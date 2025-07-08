@@ -137,7 +137,7 @@ if (document.getElementById('admin-dashboard-section')) {
   const loginError = document.getElementById('login-error');
   const logoutBtn = document.getElementById('logout-btn');
 
-  // Login handler (JWT)
+  // Login handler (session)
   if (loginForm) {
     loginForm.addEventListener('submit', function(e) {
       e.preventDefault();
@@ -145,6 +145,7 @@ if (document.getElementById('admin-dashboard-section')) {
       fetch(`${window.API_BASE_URL}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           username: document.getElementById('admin-username').value,
           password: document.getElementById('admin-password').value
@@ -153,7 +154,6 @@ if (document.getElementById('admin-dashboard-section')) {
       .then(r => r.json())
       .then(data => {
         if (data.success) {
-          localStorage.setItem('token', data.token);
           showDashboard();
         } else {
           throw new Error(data.error || 'Login failed');
@@ -166,24 +166,25 @@ if (document.getElementById('admin-dashboard-section')) {
     });
   }
 
-  // Logout handler (JWT)
+  // Logout handler (session)
   if (logoutBtn) {
     logoutBtn.addEventListener('click', function() {
-      localStorage.removeItem('token');
-      showLogin();
+      fetch(`${window.API_BASE_URL}/api/admin/logout`, {
+        method: 'POST',
+        credentials: 'include'
+      }).then(() => {
+        showLogin();
+      });
     });
   }
 
   async function fetchBookings(start, end) {
-    const token = localStorage.getItem('token');
     let url = `${window.API_BASE_URL}/api/admin/bookings`;
     const params = [];
     if (start) params.push(`start=${encodeURIComponent(start)}`);
     if (end) params.push(`end=${encodeURIComponent(end)}`);
     if (params.length) url += '?' + params.join('&');
-    const res = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const res = await fetch(url, { credentials: 'include' });
     const data = await res.json();
     if (data.success) {
       renderBookings(data.bookings);
