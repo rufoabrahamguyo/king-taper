@@ -8,8 +8,8 @@ const session = require('express-session');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
-const NODE_ENV = process.env.NODE_ENV || 'development';
+const FRONTEND_URL = process.env.FRONTEND_URL || 'https://jade-travesseiro-478a89.netlify.app';
+const NODE_ENV = process.env.NODE_ENV || 'production';
 
 // Debug print of DB config (never print passwords in production logs)
 console.log('DB Config:', {
