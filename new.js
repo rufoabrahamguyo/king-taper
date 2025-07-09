@@ -126,6 +126,103 @@ document.addEventListener('DOMContentLoaded', function() {
   revealOnScroll();
 });
 
+// Hero Image Slider
+(function() {
+  const slides = document.querySelectorAll('.hero-slide');
+  const leftArrow = document.querySelector('.hero-slider-arrow.left');
+  const rightArrow = document.querySelector('.hero-slider-arrow.right');
+  let current = 0;
+  function showSlide(idx) {
+    slides.forEach((slide, i) => {
+      slide.classList.toggle('active', i === idx);
+    });
+  }
+  if (leftArrow && rightArrow && slides.length > 1) {
+    leftArrow.addEventListener('click', function() {
+      current = (current - 1 + slides.length) % slides.length;
+      showSlide(current);
+    });
+    rightArrow.addEventListener('click', function() {
+      current = (current + 1) % slides.length;
+      showSlide(current);
+    });
+  }
+})();
+
+// Modern Hero Slider
+(function() {
+  const slider = document.querySelector('.modern-slider .slider');
+  const slides = document.querySelectorAll('.modern-slider .slide');
+  const prevBtn = document.querySelector('.modern-slider .slider-btn.prev');
+  const nextBtn = document.querySelector('.modern-slider .slider-btn.next');
+  const dotsContainer = document.querySelector('.modern-slider .slider-dots');
+  let current = 0;
+  let interval;
+
+  if (!slider || slides.length === 0 || !prevBtn || !nextBtn || !dotsContainer) return;
+
+  // Create dots
+  function createDots() {
+    dotsContainer.innerHTML = '';
+    slides.forEach((_, i) => {
+      const dot = document.createElement('button');
+      dot.className = 'dot' + (i === 0 ? ' active' : '');
+      dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+      dot.addEventListener('click', () => goToSlide(i));
+      dotsContainer.appendChild(dot);
+    });
+  }
+
+  function updateDots() {
+    const dots = dotsContainer.querySelectorAll('.dot');
+    dots.forEach((dot, i) => dot.classList.toggle('active', i === current));
+  }
+
+  function goToSlide(idx) {
+    slides.forEach((slide, i) => {
+      slide.classList.toggle('active', i === idx);
+      slide.style.transform = `translateX(${(i-idx)*100}%)`;
+    });
+    current = idx;
+    updateDots();
+  }
+
+  function nextSlide() {
+    goToSlide((current + 1) % slides.length);
+  }
+  function prevSlide() {
+    goToSlide((current - 1 + slides.length) % slides.length);
+  }
+
+  function startAutoSlide() {
+    interval = setInterval(nextSlide, 5000);
+  }
+  function stopAutoSlide() {
+    clearInterval(interval);
+  }
+
+  // Initial setup
+  slides.forEach((slide, i) => {
+    slide.style.transform = `translateX(${i*100}%)`;
+  });
+  createDots();
+  startAutoSlide();
+
+  // Event listeners
+  nextBtn.addEventListener('click', () => {
+    stopAutoSlide();
+    nextSlide();
+    startAutoSlide();
+  });
+  prevBtn.addEventListener('click', () => {
+    stopAutoSlide();
+    prevSlide();
+    startAutoSlide();
+  });
+  slider.addEventListener('mouseenter', stopAutoSlide);
+  slider.addEventListener('mouseleave', startAutoSlide);
+})();
+
 // Admin dashboard logic
 if (document.getElementById('admin-dashboard-section')) {
   const bookingsTableBody = document.querySelector('#bookings-table tbody');
