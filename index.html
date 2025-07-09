@@ -34,7 +34,7 @@
         <div class="nav-container">
             <div class="nav-logo">
                 <a href="index.html">
-                    <img src="./logo.png" alt="King Taper Logo" class="logo-img" style="display: block;">
+                    <img src="./newlogo.png" alt="King Taper Logo" class="logo-img" style="display: block;">
                 </a>
             </div>
             <ul class="nav-menu">
@@ -61,6 +61,17 @@
 
     <!-- Hero Section -->
     <section class="hero slide-in">
+      <div class="hero-bg-slider">
+        <button class="hero-bg-arrow left" aria-label="Previous background">&#8592;</button>
+        <div class="hero-bg-slide"></div>
+        <div class="hero-bg-slide"></div>
+        <div class="hero-bg-dots">
+          <button class="hero-bg-dot" aria-label="Go to background 1"></button>
+          <button class="hero-bg-dot" aria-label="Go to background 2"></button>
+          <button class="hero-bg-dot" aria-label="Go to background 3"></button>
+        </div>
+        <button class="hero-bg-arrow right" aria-label="Next background">&#8594;</button>
+      </div>
         <div class="hero-content">
             <h1 class="hero-title slide-in-horizontal">The Last Hair Bender – Precision Cuts, Personalized Service.</h1>
             <p class="hero-subtitle slide-in-horizontal delay">Meet King Ngotho — a self-taught barber redefining style in Mombasa 🇰🇪 . From fades to coils, tapers to designs, each cut is crafted to perfection.</p>
@@ -79,22 +90,22 @@
             <h2 class="section-title">Why Choose King Taper?</h2>
             <div class="features-grid">
                 <div class="feature-card">
-                    <div class="feature-icon">✨</div>
+                    <div class="feature-icon"><i class="fa fa-diamond icon-gold"></i></div>
                     <h3>Premium Quality</h3>
                     <p>Using only the finest products and tools for exceptional results every time.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">👨‍💼</div>
+                    <div class="feature-icon"><i class="fa fa-user icon-gold"></i></div>
                     <h3>Expert Stylists</h3>
                     <p>Our experienced professionals deliver personalized grooming experiences.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">🏆</div>
+                    <div class="feature-icon"><i class="fa fa-trophy icon-gold"></i></div>
                     <h3>Award Winning</h3>
                     <p>Recognized for excellence in men's grooming and customer satisfaction.</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon">⏰</div>
+                    <div class="feature-icon"><i class="fa fa-calendar icon-gold"></i></div>
                     <h3>Convenient Booking</h3>
                     <p>Easy online scheduling with flexible appointment times to fit your schedule.</p>
                 </div>
@@ -154,6 +165,35 @@
         </div>
     </section>
 
+    <!-- Contact Section -->
+    <section id="contact" class="contact slide-in">
+      <div class="contact-content">
+        <div class="contact-info">
+          <h2 class="section-title">Contact Us</h2>
+          <div class="contact-details">
+            <div class="contact-item"><span class="contact-icon">📍</span> Mombasa, Kenya</div>
+            <div class="contact-item"><span class="contact-icon">📞</span> +254 5790 4681</div>
+            <div class="contact-item"><span class="contact-icon">✉️</span> info@kingtaper.com</div>
+          </div>
+        </div>
+        <form class="contact-form" id="contactForm">
+          <div class="form-group">
+            <label for="name">Name *</label>
+            <input type="text" id="name" name="name" required>
+          </div>
+          <div class="form-group">
+            <label for="email">Email *</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+          <div class="form-group">
+            <label for="message">Message *</label>
+            <textarea id="message" name="message" rows="5" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Send Message</button>
+        </form>
+      </div>
+    </section>
+    
     <!-- Footer -->
     <footer class="footer-modern slide-in">
       <div class="footer-main">
@@ -166,7 +206,7 @@
           </ul>
         </div>
         <div class="footer-col footer-center">
-          <img src="logo.png" alt="King Taper Logo" class="footer-logo-modern">
+          <img src="newlogo.png" alt="King Taper Logo" class="footer-logo-modern">
           <h2 class="footer-brand-modern">King Taper</h2>
           <div class="footer-tagline">Premium Grooming Services</div>
         </div>

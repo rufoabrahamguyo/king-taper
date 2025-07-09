@@ -223,6 +223,85 @@ document.addEventListener('DOMContentLoaded', function() {
   slider.addEventListener('mouseleave', startAutoSlide);
 })();
 
+// Hero Background Slide-in Transition
+(function() {
+  const images = ['pole.jpg', 'background.jpg', 'tools.jpg'];
+  let current = 0;
+  let intervalId;
+  const heroSlider = document.querySelector('.hero-bg-slider');
+  if (!heroSlider) return;
+  const slides = heroSlider.querySelectorAll('.hero-bg-slide');
+  if (slides.length < 2) return;
+  const leftBtn = heroSlider.querySelector('.hero-bg-arrow.left');
+  const rightBtn = heroSlider.querySelector('.hero-bg-arrow.right');
+  const dots = heroSlider.querySelectorAll('.hero-bg-dot');
+
+  function updateDots(next) {
+    dots.forEach((dot, i) => {
+      if (i === next) {
+        dot.classList.add('active');
+      } else {
+        dot.classList.remove('active');
+      }
+    });
+  }
+
+  function showSlide(next) {
+    const activeSlide = slides[current % 2];
+    const nextSlide = slides[next % 2];
+    nextSlide.style.backgroundImage = `linear-gradient(120deg, rgba(28,28,28,0.7) 60%, rgba(42,42,42,0.7) 100%), url('${images[next]}')`;
+    nextSlide.classList.add('active');
+    nextSlide.classList.remove('prev');
+    activeSlide.classList.remove('active');
+    activeSlide.classList.add('prev');
+    setTimeout(() => {
+      activeSlide.classList.remove('prev');
+    }, 700);
+    current = next;
+    updateDots(next);
+  }
+
+  // Initialize first slide and dots
+  slides[0].style.backgroundImage = `linear-gradient(120deg, rgba(28,28,28,0.7) 60%, rgba(42,42,42,0.7) 100%), url('${images[0]}')`;
+  slides[0].classList.add('active');
+  slides[1].classList.remove('active', 'prev');
+  updateDots(0);
+
+  function nextSlide() {
+    showSlide((current + 1) % images.length);
+  }
+  function prevSlide() {
+    showSlide((current - 1 + images.length) % images.length);
+  }
+  function resetInterval() {
+    clearInterval(intervalId);
+    intervalId = setInterval(nextSlide, 4000);
+  }
+
+  intervalId = setInterval(nextSlide, 4000);
+
+  if (rightBtn) {
+    rightBtn.addEventListener('click', () => {
+      nextSlide();
+      resetInterval();
+    });
+  }
+  if (leftBtn) {
+    leftBtn.addEventListener('click', () => {
+      prevSlide();
+      resetInterval();
+    });
+  }
+  if (dots.length) {
+    dots.forEach((dot, i) => {
+      dot.addEventListener('click', () => {
+        showSlide(i);
+        resetInterval();
+      });
+    });
+  }
+})();
+
 // Admin dashboard logic
 if (document.getElementById('admin-dashboard-section')) {
   const bookingsTableBody = document.querySelector('#bookings-table tbody');
