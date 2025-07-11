@@ -7,11 +7,16 @@ const session    = require('express-session');
 
 const app      = express();
 const PORT     = process.env.PORT || 3001;
-const FRONTEND = process.env.FRONTEND_URL;
+// --- CORS and Session Settings for Production ---
+// Set FRONTEND to your Netlify/custom domain, e.g. 'https://your-site.netlify.app' or 'https://www.kingtaper.com'
+const FRONTEND = process.env.FRONTEND_URL || 'https://your-site.netlify.app';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Middleware
-app.use(cors({ origin: FRONTEND, credentials: true }));
+app.use(cors({
+  origin: FRONTEND,
+  credentials: true
+}));
 app.use(bodyParser.json());
 app.use(session({
   secret: process.env.SESSION_SECRET,
