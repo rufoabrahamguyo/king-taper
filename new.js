@@ -507,3 +507,20 @@ if (document.getElementById('admin-dashboard-section')) {
   // Initial load
   fetchBookings();
 }
+
+// Scroll-triggered slide-in animation
+function handleSlideInOnScroll() {
+  const slideEls = document.querySelectorAll('.slide-in');
+  const triggerBottom = window.innerHeight * 0.95;
+  slideEls.forEach(el => {
+    const boxTop = el.getBoundingClientRect().top;
+    if (boxTop < triggerBottom) {
+      el.classList.add('slide-in-visible');
+    } else {
+      el.classList.remove('slide-in-visible');
+    }
+  });
+}
+
+window.addEventListener('scroll', handleSlideInOnScroll);
+window.addEventListener('DOMContentLoaded', handleSlideInOnScroll);

@@ -1,177 +1,113 @@
-require('dotenv').config();  // Load .env variables
-
-const express = require('express');
-const cors = require('cors');
+require('dotenv').config();
+const express    = require('express');
+const mysql      = require('mysql2');
+const cors       = require('cors');
 const bodyParser = require('body-parser');
-const mysql = require('mysql2');
-const session = require('express-session');
+const session    = require('express-session');
 
-const app = express();
-const PORT = process.env.PORT || 3001;
-const FRONTEND_URL = process.env.FRONTEND_URL || 'https://jade-travesseiro-478a89.netlify.app';
-const NODE_ENV = process.env.NODE_ENV || 'production';
+const app      = express();
+const PORT     = process.env.PORT || 3001;
+const FRONTEND = process.env.FRONTEND_URL;
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// Debug print of DB config (never print passwords in production logs)
-console.log('DB Config:', {
-  host: process.env.MYSQLHOST,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD ? '******' : undefined,
-  database: process.env.MYSQLDATABASE,
-  port: process.env.MYSQLPORT || 3306
-});
-
-// CORS setup — allow production and local development
-app.use(cors({
-  origin: [FRONTEND_URL, 'http://localhost:3000'],
-  credentials: true
-}));
-
+// Middleware
+app.use(cors({ origin: FRONTEND, credentials: true }));
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// Session middleware for admin login
 app.use(session({
-  secret: process.env.SESSION_SECRET || 'your_secret_key',
+  secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
   cookie: {
-    httpOnly: true,
-    sameSite: 'none',
-    secure: true
+    secure: NODE_ENV === 'production',
+    sameSite: NODE_ENV === 'production' ? 'none' : 'lax',
+    httpOnly: true
   }
 }));
 
-// MySQL connection using environment variables
-const db = mysql.createConnection({
-  host: process.env.MYSQLHOST,
-  user: process.env.MYSQLUSER,
+// Database pool
+const db = mysql.createPool({
+  host:     process.env.MYSQLHOST,
+  user:     process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQLDATABASE,
-  port: process.env.MYSQLPORT || 3306
+  port:     process.env.MYSQLPORT
 });
 
-db.connect((err) => {
-  if (err) {
-    console.error('🚫 MySQL Connection Failed:', err);
-  } else {
-    console.log('✅ Connected to MySQL Database');
-  }
-});
-
-const ADMIN_USER = 'kingtaper';
-const ADMIN_PASS = 'taper@2024'; // Change this in production!
-
-// Save booking endpoint
+// 1) Save a booking
 app.post('/api/book', (req, res) => {
   const { name, email, phone, service, price, date, time, message } = req.body;
-
-  console.log('📥 Incoming booking data:', req.body);  // Log received data
-
-  const query = `
-    INSERT INTO bookings (name, email, phone, service, price, date, time, message)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `;
-
-  db.query(
-    query,
-    [name, email, phone, service, price, date, time, message],
-    (err, results) => {
-      if (err) {
-        console.error('❌ DB Insert Error:', err);  // Log DB errors
-        return res.json({ success: false, error: err.message });
-      }
-
-      console.log('✅ Booking saved successfully:', results);  // Log successful insert
-      return res.json({ success: true });
-    }
-  );
-});
-
-// Temporary debug endpoint to view all bookings
-app.get('/api/bookings/debug', (req, res) => {
-  db.query('SELECT * FROM bookings ORDER BY id DESC', (err, results) => {
+  if (!name || !email || !phone || !service || !price || !date || !time) {
+    return res.status(400).json({ success: false, error: 'Missing required fields' });
+  }
+  const sql = `INSERT INTO bookings (name, email, phone, service, price, date, time, message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+  db.query(sql, [name, email, phone, service, price, date, time, message], (err, result) => {
     if (err) {
-      console.error('❌ Fetch bookings error:', err);
-      return res.status(500).json({ error: 'DB fetch failed' });
+      return res.status(500).json({ success: false, error: err.message });
     }
-    console.log('📊 Current bookings:', results);
-    res.json(results);
+    res.status(201).json({ success: true, bookingId: result.insertId });
   });
 });
 
-// Admin login endpoint (session)
+// 2) Admin login
 app.post('/api/admin/login', (req, res) => {
-  const { username, password } = req.body;
-  if (username === ADMIN_USER && password === ADMIN_PASS) {
+  const { user, pass } = req.body;
+  if (user === process.env.ADMIN_USER && pass === process.env.ADMIN_PASS) {
     req.session.admin = true;
-    res.json({ success: true });
-  } else {
-    res.status(401).json({ success: false, error: 'Invalid credentials' });
+    return res.json({ success: true });
   }
+  res.status(401).json({ success: false, error: 'Invalid credentials' });
 });
 
-// Admin logout
+// 3) Admin logout
 app.post('/api/admin/logout', (req, res) => {
-  req.session.destroy();
-  res.json({ success: true });
+  req.session.destroy(err => {
+    if (err) return res.status(500).json({ success: false, error: 'Logout failed' });
+    res.clearCookie('connect.sid', { path: '/' });
+    res.json({ success: true });
+  });
 });
 
-// Get bookings with optional date filter (protected)
+// 4) Fetch all bookings (protected)
 app.get('/api/admin/bookings', (req, res) => {
   if (!req.session.admin) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
-  const { start, end } = req.query;
-  let sql = 'SELECT * FROM bookings';
-  let params = [];
-  if (start && end) {
-    sql += ' WHERE date BETWEEN ? AND ?';
-    params = [start, end];
-  }
-  sql += ' ORDER BY id DESC';
-  db.query(sql, params, (err, results) => {
+  db.query('SELECT * FROM bookings ORDER BY id DESC', (err, rows) => {
     if (err) {
-      console.error(err);
-      return res.status(500).json({ success: false, error: 'Database error' });
+      return res.status(500).json({ success: false, error: err.message });
     }
-    res.json({ success: true, bookings: results });
+    res.json({ success: true, bookings: rows });
   });
 });
 
-// Delete a booking (protected)
-app.delete('/api/admin/bookings/:id', (req, res) => {
-  if (!req.session.admin) {
-    return res.status(401).json({ success: false, error: 'Unauthorized' });
-  }
-  const { id } = req.params;
-  db.query('DELETE FROM bookings WHERE id = ?', [id], (err, result) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).json({ success: false, error: 'Database error' });
-    }
-    res.json({ success: true });
-  });
-});
-
-// Edit (update) a booking (protected)
+// 5) Update a booking (protected)
 app.put('/api/admin/bookings/:id', (req, res) => {
   if (!req.session.admin) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
   const { id } = req.params;
   const { name, email, phone, service, price, date, time, message } = req.body;
-  const sql = 'UPDATE bookings SET name=?, email=?, phone=?, service=?, price=?, date=?, time=?, message=? WHERE id=?';
-  db.query(sql, [name, email, phone, service, price, date, time, message, id], (err, result) => {
+  const sql = `UPDATE bookings SET name=?, email=?, phone=?, service=?, price=?, date=?, time=?, message=? WHERE id=?`;
+  db.query(sql, [name, email, phone, service, price, date, time, message, id], (err) => {
     if (err) {
-      console.error(err);
-      return res.status(500).json({ success: false, error: 'Database error' });
+      return res.status(500).json({ success: false, error: err.message });
     }
     res.json({ success: true });
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// 6) Delete a booking (protected)
+app.delete('/api/admin/bookings/:id', (req, res) => {
+  if (!req.session.admin) {
+    return res.status(401).json({ success: false, error: 'Unauthorized' });
+  }
+  db.query('DELETE FROM bookings WHERE id=?', [req.params.id], (err) => {
+    if (err) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    res.json({ success: true });
+  });
 });
 
-// NOTE: For production, set NODE_ENV=production and SESSION_SECRET in Railway environment variables.
+// Start server
+app.listen(PORT, () => console.log(`Bookings API listening on port ${PORT}`));
