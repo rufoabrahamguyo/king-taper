@@ -6,6 +6,8 @@ const bodyParser = require('body-parser');
 const session    = require('express-session');
 
 const app      = express();
+app.set('trust proxy', 1);
+
 const PORT     = process.env.PORT || 3001;
 // --- CORS and Session Settings for Production ---
 // Set FRONTEND to your Netlify/custom domain, e.g. 'https://your-site.netlify.app' or 'https://www.kingtaper.com'
