@@ -206,8 +206,8 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="email">Email Address *</label>
-                    <input type="email" id="email" name="email" required>
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email">
                 </div>
                 <div class="form-group">
                     <label for="phone">Phone Number *</label>
@@ -394,7 +394,7 @@
         Notes: ${bookingData.message || 'None'}`;
         
             // Open an empty tab immediately to avoid popup blockers
-            const waURL = `https://wa.me/254703456797?text=${encodeURIComponent(message)}`;
+            const waURL = `https://wa.me/254757904681?text=${encodeURIComponent(message)}`;
             const waTab = window.open('', '_blank');
         
             fetch(API_URL, {

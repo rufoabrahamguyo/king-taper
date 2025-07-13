@@ -43,7 +43,7 @@ const db = mysql.createPool({
 // 1) Save a booking
 app.post('/api/book', (req, res) => {
   const { name, email, phone, service, price, date, time, message } = req.body;
-  if (!name || !email || !phone || !service || !price || !date || !time) {
+  if (!name || !phone || !service || !price || !date || !time) {
     return res.status(400).json({ success: false, error: 'Missing required fields' });
   }
   const sql = `INSERT INTO bookings (name, email, phone, service, price, date, time, message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
