@@ -39,6 +39,25 @@ const db = mysql.createPool({
   database: process.env.MYSQLDATABASE,
   port:     process.env.MYSQLPORT
 });
+// right after your `const db = mysql.createPool({...})`:
+
+db.query(
+  `ALTER TABLE bookings
+     ADD CONSTRAINT uq_bookings_date_time UNIQUE (date, time)`,
+  (err) => {
+    if (err) {
+      // ER_DUP_KEYNAME means it’s already there—no biggie
+      if (err.code === 'ER_DUP_KEYNAME') {
+        console.log('✅ Unique constraint (date,time) already exists.');
+      } else {
+        console.error('❌ Could not add unique constraint:', err);
+      }
+    } else {
+      console.log('✅ Unique constraint on (date,time) added.');
+    }
+  }
+);
+
 
 // 1) Save a booking
 app.post('/api/book', (req, res) => {
@@ -46,23 +65,47 @@ app.post('/api/book', (req, res) => {
   if (!name || !phone || !service || !price || !date || !time) {
     return res.status(400).json({ success: false, error: 'Missing required fields' });
   }
-  // Check if the time slot is already booked
-  db.query('SELECT COUNT(*) AS count FROM bookings WHERE date = ? AND time = ?', [date, time], (err, results) => {
-    if (err) {
-      return res.status(500).json({ success: false, error: err.message });
-    }
-    if (results[0].count > 0) {
-      return res.status(409).json({ success: false, error: 'Time slot already booked' });
-    }
-    const sql = `INSERT INTO bookings (name, email, phone, service, price, date, time, message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-    db.query(sql, [name, email, phone, service, price, date, time, message], (err, result) => {
+
+  // 1) Pre‑check
+  db.query(
+    'SELECT COUNT(*) AS count FROM bookings WHERE date = ? AND time = ?', 
+    [date, time], 
+    (err, results) => {
       if (err) {
         return res.status(500).json({ success: false, error: err.message });
       }
-      res.status(201).json({ success: true, bookingId: result.insertId });
-    });
-  });
+      if (results[0].count > 0) {
+        // slot already taken
+        return res.status(409).json({ success: false, error: 'Time slot already booked' });
+      }
+
+      // 2) Try inserting
+      const sql = `INSERT INTO bookings 
+                     (name, email, phone, service, price, date, time, message) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+      db.query(
+        sql,
+        [name, email, phone, service, price, date, time, message],
+        (err, result) => {
+          if (err) {
+            // **Catch duplicate‐entry from UNIQUE constraint**
+            if (err.code === 'ER_DUP_ENTRY') {
+              return res
+                .status(409)
+                .json({ success: false, error: 'Time slot already booked' });
+            }
+            return res
+              .status(500)
+              .json({ success: false, error: err.message });
+          }
+          // Success!
+          res.status(201).json({ success: true, bookingId: result.insertId });
+        }
+      );
+    }
+  );
 });
+
 
 // 2) Admin login
 app.post('/api/admin/login', (req, res) => {

@@ -369,13 +369,26 @@
               .then(data => {
                 if (!data.success) return;
                 const booked = new Set(data.times);
-                Array.from(timeSelect.options).forEach(opt => {
-                  if (opt.value && booked.has(opt.value)) {
-                    opt.style.color = 'red';
-                    opt.disabled = true;
-                  } else {
-                    opt.style.color = '';
-                    opt.disabled = false;
+                // Remove all options except the placeholder
+                const placeholder = timeSelect.querySelector('option[value=""]');
+                const allTimes = [
+                  "09:00","09:40","10:20","11:00","11:40","12:20","13:00","13:40","14:20","15:00","15:40","16:20","17:00","17:40","18:20","19:00","19:40","20:20","21:00"
+                ];
+                timeSelect.innerHTML = '';
+                if (placeholder) timeSelect.appendChild(placeholder);
+                else timeSelect.innerHTML = '<option value="">Select Time</option>';
+                allTimes.forEach(time => {
+                  if (!booked.has(time)) {
+                    const opt = document.createElement('option');
+                    opt.value = time;
+                    opt.textContent = time.replace(":", ":").replace(/^(\d{1,2}):(\d{2})$/, (m, h, min) => {
+                      let hour = parseInt(h, 10);
+                      let ampm = hour >= 12 ? 'PM' : 'AM';
+                      if (hour > 12) hour -= 12;
+                      if (hour === 0) hour = 12;
+                      return `${hour}:${min} ${ampm}`;
+                    });
+                    timeSelect.appendChild(opt);
                   }
                 });
               });
