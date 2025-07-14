@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Hair Services - King Taper</title>
     <link rel="stylesheet" href="../new.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         .services-hero {
             background: linear-gradient(120deg, var(--primary) 60%, var(--secondary) 100%);
@@ -68,7 +68,7 @@
 
         .service-title {
             font-size: 1.8rem;
-            color: var(--primary);
+            color: #fff;
             margin-bottom: 1rem;
             font-weight: bold;
         }
@@ -91,7 +91,7 @@
 
         .service-duration {
             font-size: 1.05rem;
-            color: var(--primary);
+            color: #fff;
             margin-bottom: 0.5rem;
         }
 
@@ -132,6 +132,22 @@
 
         .currency-note strong {
             color: var(--accent);
+        }
+
+        .service-card-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5); /* Dark overlay */
+            z-index: 1;
+        }
+
+        .service-card-content {
+            position: relative;
+            z-index: 2;
+            color: var(--light); /* Text color for overlay */
         }
 
         /* Horizontal slide-in for the services page title */
@@ -188,8 +204,9 @@
     <section class="services-section slide-in">
         <div class="services-grid">
             <!-- Hair Cut -->
-            <div class="service-card slide-in">
-                
+            <div class="service-card slide-in" style="background: url('../hair cut.jpeg') center/cover no-repeat; position: relative;">
+              <div class="service-card-overlay"></div>
+              <div class="service-card-content">
                 <h3 class="service-title">Hair Cut</h3>
                 <p class="service-description">
                     Professional haircut with precision styling and finishing touches.
@@ -198,12 +215,14 @@
                 <div class="service-price">KSH 500</div>
                 <div class="service-duration">Duration: 30–40 mins</div>
                 <a href="../booking.html" class="book-btn">Book Now</a>
+              </div>
             </div>
             
 
             <!-- Hair Cut & Beard -->
-            <div class="service-card slide-in">
-                
+            <div class="service-card slide-in" style="background: url('../hair cut and beard.jpeg') center/cover no-repeat; position: relative;">
+              <div class="service-card-overlay"></div>
+              <div class="service-card-content">
                 <h3 class="service-title">Hair Cut &amp; Beard</h3>
                 <p class="service-description">
                     Complete grooming package including haircut and beard trimming.
@@ -211,11 +230,13 @@
                 <div class="service-price">KSH 700</div>
                 <div class="service-duration">Duration: 30–40 mins</div>
                 <a href="../booking.html" class="book-btn">Book Now</a>
+              </div>
             </div>
 
             <!-- Beard Trim -->
-            <div class="service-card slide-in">
-                
+            <div class="service-card slide-in" style="background: var(--light); position: relative;">
+              <div class="service-card-overlay"></div>
+              <div class="service-card-content">
                 <h3 class="service-title">Beard Trim</h3>
                 <p class="service-description">
                     Professional beard trimming and shaping for a clean, defined look.
@@ -223,11 +244,13 @@
                 <div class="service-price">KSH 200</div>
                 <div class="service-duration">Duration: 30–40 mins</div>
                 <a href="../booking.html" class="book-btn">Book Now</a>
+              </div>
             </div>
 
             <!-- Kids Cut -->
-            <div class="service-card slide-in">
-                
+            <div class="service-card slide-in" style="background: url('../\ kids\ cut.jpeg') center/cover no-repeat; position: relative;">
+              <div class="service-card-overlay"></div>
+              <div class="service-card-content">
                 <h3 class="service-title">Kids Cut</h3>
                 <p class="service-description">
                     Gentle and fun haircuts specially designed for children.
@@ -235,11 +258,13 @@
                 <div class="service-price">KSH 300</div>
                 <div class="service-duration">Duration: 30–40 mins</div>
                 <a href="../booking.html" class="book-btn">Book Now</a>
+              </div>
             </div>
 
             <!-- Coils & Haircut -->
-            <div class="service-card slide-in">
-                
+            <div class="service-card slide-in" style="background: url('../coils and haircut.jpeg') center/cover no-repeat; position: relative;">
+              <div class="service-card-overlay"></div>
+              <div class="service-card-content">
                 <h3 class="service-title">Coils &amp; Haircut</h3>
                 <p class="service-description">
                     Specialized coil styling combined with precision haircut.
@@ -247,11 +272,13 @@
                 <div class="service-price">KSH 1,500</div>
                 <div class="service-duration">Duration: 30–40 mins</div>
                 <a href="../booking.html" class="book-btn">Book Now</a>
+              </div>
             </div>
 
             <!-- Barrel Twist -->
-            <div class="service-card slide-in">
-               
+            <div class="service-card slide-in" style="background: url('../barrel twist.jpeg') center/cover no-repeat; position: relative;">
+              <div class="service-card-overlay"></div>
+              <div class="service-card-content">
                 <h3 class="service-title">Barrel Twist</h3>
                 <p class="service-description">
                     Professional barrel twist styling for textured hair.
@@ -259,11 +286,13 @@
                 <div class="service-price">KSH 1,000</div>
                 <div class="service-duration">Duration: 30–40 mins</div>
                 <a href="../booking.html" class="book-btn">Book Now</a>
+              </div>
             </div>
 
             <!-- Twist -->
-            <div class="service-card slide-in">
-                
+            <div class="service-card slide-in" style="background: url('../twist.jpeg') center/cover no-repeat; position: relative;">
+              <div class="service-card-overlay"></div>
+              <div class="service-card-content">
                 <h3 class="service-title">Twist</h3>
                 <p class="service-description">
                     Classic twist styling for natural hair texture.
@@ -271,11 +300,13 @@
                 <div class="service-price">KSH 1,000</div>
                 <div class="service-duration">Duration: 30–40 mins</div>
                 <a href="../booking.html" class="book-btn">Book Now</a>
+              </div>
             </div>
 
             <!-- Hair Color -->
-            <div class="service-card slide-in">
-                
+            <div class="service-card slide-in" style="background: url('../hair color.jpeg') center/cover no-repeat; position: relative;">
+              <div class="service-card-overlay"></div>
+              <div class="service-card-content">
                 <h3 class="service-title">Hair Color</h3>
                 <p class="service-description">
                     Professional hair coloring and treatment services.
@@ -283,6 +314,7 @@
                 <div class="service-price">KSH 500</div>
                 <div class="service-duration">Duration: 30–40 mins</div>
                 <a href="../booking.html" class="book-btn">Book Now</a>
+              </div>
             </div>
         </div>
     </section>
@@ -295,7 +327,7 @@
           <ul class="footer-contact-list">
             <li><span class="footer-icon">📍</span> Mombasa, Kenya</li>
             <li><span class="footer-icon">📞</span> +254 5790 4681</li>
-            <li><span class="footer-icon">✉️</span> info@kingtaper.com</li>
+            <li><span class="footer-icon">✉️</span> Symog49@icloud.com</li>
           </ul>
         </div>
         <div class="footer-col footer-center">
@@ -316,10 +348,8 @@
       <div class="footer-separator"></div>
       <div class="footer-bottom-modern">
         <div class="footer-social-icons">
-          <a href="#" class="footer-social-circle"><i class="fa fa-facebook" aria-hidden="true"></i></a>
-          <a href="#" class="footer-social-circle"><i class="fa fa-envelope" aria-hidden="true"></i></a>
-          <a href="#" class="footer-social-circle"><i class="fa fa-phone" aria-hidden="true"></i></a>
-          <a href="https://www.instagram.com/king_ngotho?utm_source=qr" class="footer-social-circle" target="_blank" rel="noopener noreferrer"><i class="fa fa-instagram" aria-hidden="true"></i></a>
+           <a href="https://www.instagram.com/king_ngotho?utm_source=qr" class="footer-social-circle" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+           <a href="#" class="footer-social-circle"><i class="fa-brands fa-tiktok" aria-hidden="true"></i></a>
         </div>
       </div>
       <div class="footer-copyright">

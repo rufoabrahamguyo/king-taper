@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>King Taper - Premium Grooming Services</title>
     <link rel="stylesheet" href="new.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <style>
         /* Horizontal slide-in for the index page hero words */
         .slide-in-horizontal {
@@ -173,7 +173,7 @@
           <div class="contact-details">
             <div class="contact-item"><span class="contact-icon">📍</span> Mombasa, Kenya</div>
             <div class="contact-item"><span class="contact-icon">📞</span> +254 5790 4681</div>
-            <div class="contact-item"><span class="contact-icon">✉️</span> info@kingtaper.com</div>
+            <div class="contact-item"><span class="contact-icon">✉️</span> Symog49@icloud.com</div>
           </div>
         </div>
         <form class="contact-form" id="contactForm">
@@ -223,16 +223,34 @@
       <div class="footer-separator"></div>
       <div class="footer-bottom-modern">
         <div class="footer-social-icons">
-          <a href="#" class="footer-social-circle"><i class="fa fa-facebook" aria-hidden="true"></i></a>
-          <a href="Symog49@icloud.com" class="footer-social-circle"><i class="fa fa-envelope" aria-hidden="true"></i></a>
-          <a href="#" class="footer-social-circle"><i class="fa fa-phone" aria-hidden="true"></i></a>
-          <a href="https://www.instagram.com/king_ngotho?utm_source=qr" class="footer-social-circle" target="_blank" rel="noopener noreferrer"><i class="fa fa-instagram" aria-hidden="true"></i></a>
+           <a href="https://www.instagram.com/king_ngotho?utm_source=qr" class="footer-social-circle" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
+           <a href="#" class="footer-social-circle"><i class="fa-brands fa-tiktok" aria-hidden="true"></i></a>
         </div>
       </div>
       <div class="footer-copyright">
         &copy; 2025 King Taper. All rights reserved.
       </div>
     </footer>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        const contactForm = document.getElementById('contactForm');
+        if (contactForm) {
+          contactForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const name = document.getElementById('name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const message = document.getElementById('message').value.trim();
+            if (!name || !email || !message) {
+              alert('Please fill in all required fields.');
+              return;
+            }
+            const waMessage = `Contact Form Submission:%0AName: ${name}%0AEmail: ${email}%0AMessage: ${message}`;
+            const waURL = `https://wa.me/254757904681?text=${waMessage}`;
+            window.open(waURL, '_blank');
+          });
+        }
+      });
+    </script>
     <script src="new.js"></script>
 </body>
 </html>

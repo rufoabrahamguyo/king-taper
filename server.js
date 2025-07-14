@@ -79,7 +79,15 @@ app.get('/api/admin/bookings', (req, res) => {
   if (!req.session.admin) {
     return res.status(401).json({ success: false, error: 'Unauthorized' });
   }
-  db.query('SELECT * FROM bookings ORDER BY id DESC', (err, rows) => {
+  const { start, end } = req.query;
+  let sql = 'SELECT * FROM bookings';
+  const params = [];
+  if (start && end) {
+    sql += ' WHERE date >= ? AND date <= ?';
+    params.push(start, end);
+  }
+  sql += ' ORDER BY id DESC';
+  db.query(sql, params, (err, rows) => {
     if (err) {
       return res.status(500).json({ success: false, error: err.message });
     }
@@ -113,6 +121,21 @@ app.delete('/api/admin/bookings/:id', (req, res) => {
       return res.status(500).json({ success: false, error: err.message });
     }
     res.json({ success: true });
+  });
+});
+
+// Get booked times for a specific date
+app.get('/api/booked-times', (req, res) => {
+  const { date } = req.query;
+  if (!date) {
+    return res.status(400).json({ success: false, error: 'Missing date parameter' });
+  }
+  db.query('SELECT time FROM bookings WHERE date = ?', [date], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    const times = rows.map(r => r.time);
+    res.json({ success: true, times });
   });
 });
 
