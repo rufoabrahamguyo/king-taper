@@ -46,12 +46,21 @@ app.post('/api/book', (req, res) => {
   if (!name || !phone || !service || !price || !date || !time) {
     return res.status(400).json({ success: false, error: 'Missing required fields' });
   }
-  const sql = `INSERT INTO bookings (name, email, phone, service, price, date, time, message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-  db.query(sql, [name, email, phone, service, price, date, time, message], (err, result) => {
+  // Check if the time slot is already booked
+  db.query('SELECT COUNT(*) AS count FROM bookings WHERE date = ? AND time = ?', [date, time], (err, results) => {
     if (err) {
       return res.status(500).json({ success: false, error: err.message });
     }
-    res.status(201).json({ success: true, bookingId: result.insertId });
+    if (results[0].count > 0) {
+      return res.status(409).json({ success: false, error: 'Time slot already booked' });
+    }
+    const sql = `INSERT INTO bookings (name, email, phone, service, price, date, time, message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    db.query(sql, [name, email, phone, service, price, date, time, message], (err, result) => {
+      if (err) {
+        return res.status(500).json({ success: false, error: err.message });
+      }
+      res.status(201).json({ success: true, bookingId: result.insertId });
+    });
   });
 });
 
