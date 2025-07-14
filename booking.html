@@ -332,7 +332,7 @@
       <div class="footer-bottom-modern">
         <div class="footer-social-icons">
           <a href="https://www.instagram.com/king_ngotho?utm_source=qr" class="footer-social-circle" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-instagram" aria-hidden="true"></i></a>
-          <a href="#" class="footer-social-circle"><i class="fa-brands fa-tiktok" aria-hidden="true"></i></a>
+          <a href="https://www.tiktok.com/@king_taper?_r=1&_d=ejli5iekmj7541&sec_uid=MS4wLjABAAAAFJBnJ9giNgBN1xKspotzcHMe110YTJfVz38JHWlkqORShclQQT_23PPXStxzvwX9&share_author_id=7131257623361520646&sharer_language=en&source=h5_m&u_code=e39a894g227354&ug_btm=b8727,b0&social_share_type=4&utm_source=copy&sec_user_id=MS4wLjABAAAAFJBnJ9giNgBN1xKspotzcHMe110YTJfVz38JHWlkqORShclQQT_23PPXStxzvwX9&tt_from=copy&utm_medium=ios&utm_campaign=client_share&enable_checksum=1&user_id=7131257623361520646&share_link_id=62C7907B-F4B3-4CB7-AC69-506DDA270913&share_app_id=1233" class="footer-social-circle" target="_blank" rel="noopener noreferrer"><i class="fa-brands fa-tiktok" aria-hidden="true"></i></a>
         </div>
       </div>
       <div class="footer-copyright">
@@ -372,8 +372,10 @@
                 Array.from(timeSelect.options).forEach(opt => {
                   if (opt.value && booked.has(opt.value)) {
                     opt.style.color = 'red';
+                    opt.disabled = true;
                   } else {
                     opt.style.color = '';
+                    opt.disabled = false;
                   }
                 });
               });
