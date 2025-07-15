@@ -25,8 +25,9 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: NODE_ENV === 'production',
-    sameSite: NODE_ENV === 'production' ? 'none' : 'lax',
+    // For production: must be HTTPS and cross-site compatible (Safari, Chrome, etc)
+    secure: true,
+    sameSite: 'none',
     httpOnly: true
   }
 }));
