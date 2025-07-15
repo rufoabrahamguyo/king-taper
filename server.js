@@ -40,8 +40,22 @@ const db = mysql.createPool({
   port:     process.env.MYSQLPORT
 });
 
-// If you want to ensure the unique constraint exists, run this manually in your DB:
-// ALTER TABLE bookings ADD CONSTRAINT uq_bookings_date_time UNIQUE (date, time);
+db.query(
+  `ALTER TABLE bookings
+     ADD CONSTRAINT uq_bookings_date_time UNIQUE (date, time)`,
+  (err) => {
+    if (err) {
+      // ER_DUP_KEYNAME means it’s already there—no biggie
+      if (err.code === 'ER_DUP_KEYNAME') {
+        console.log('✅ Unique constraint (date,time) already exists.');
+      } else {
+        console.error('❌ Could not add unique constraint:', err);
+      }
+    } else {
+      console.log('✅ Unique constraint on (date,time) added.');
+    }
+  }
+);
 
 // 1) Save a booking
 app.post('/api/book', (req, res) => {
