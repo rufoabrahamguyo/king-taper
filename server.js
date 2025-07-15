@@ -176,6 +176,29 @@ app.delete('/api/admin/bookings/:id', (req, res) => {
   });
 });
 
+// Define your business hours and slot interval
+const ALL_TIME_SLOTS = [
+  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+  "15:00", "15:30", "16:00", "16:30", "17:00"
+];
+
+// Endpoint to get available (unbooked) time slots for a specific date
+app.get('/api/available-times', (req, res) => {
+  const { date } = req.query;
+  if (!date) {
+    return res.status(400).json({ success: false, error: 'Missing date parameter' });
+  }
+  db.query('SELECT time FROM bookings WHERE date = ?', [date], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    const bookedTimes = rows.map(r => r.time);
+    const availableTimes = ALL_TIME_SLOTS.filter(t => !bookedTimes.includes(t));
+    res.json({ success: true, times: availableTimes });
+  });
+});
+
 // Get booked times for a specific date
 app.get('/api/booked-times', (req, res) => {
   const { date } = req.query;
