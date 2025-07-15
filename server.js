@@ -9,9 +9,12 @@ const app      = express();
 app.set('trust proxy', 1);
 
 const PORT     = process.env.PORT || 3001;
+// --- CORS and Session Settings for Production ---
+// Set FRONTEND to your Netlify/custom domain, e.g. 'https://your-site.netlify.app' or 'https://www.kingtaper.com'
 const FRONTEND = process.env.FRONTEND_URL || 'https://your-site.netlify.app';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
+// Middleware
 app.use(cors({
   origin: FRONTEND,
   credentials: true
@@ -28,6 +31,7 @@ app.use(session({
   }
 }));
 
+// Database pool
 const db = mysql.createPool({
   host:     process.env.MYSQLHOST,
   user:     process.env.MYSQLUSER,
@@ -36,22 +40,8 @@ const db = mysql.createPool({
   port:     process.env.MYSQLPORT
 });
 
-// Ensure unique (date, time)
-db.query(
-  `ALTER TABLE bookings
-     ADD CONSTRAINT uq_bookings_date_time UNIQUE (date, time)`,
-  (err) => {
-    if (err && err.code !== 'ER_DUP_KEYNAME') {
-      console.error('❌ Could not add unique constraint:', err);
-    }
-  }
-);
-
-const ALL_TIME_SLOTS = [
-  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
-  "15:00", "15:30", "16:00", "16:30", "17:00"
-];
+// If you want to ensure the unique constraint exists, run this manually in your DB:
+// ALTER TABLE bookings ADD CONSTRAINT uq_bookings_date_time UNIQUE (date, time);
 
 // 1) Save a booking
 app.post('/api/book', (req, res) => {
@@ -60,6 +50,7 @@ app.post('/api/book', (req, res) => {
     return res.status(400).json({ success: false, error: 'Missing required fields' });
   }
 
+  // 1) Pre‑check
   db.query(
     'SELECT COUNT(*) AS count FROM bookings WHERE date = ? AND time = ?', 
     [date, time], 
@@ -68,9 +59,11 @@ app.post('/api/book', (req, res) => {
         return res.status(500).json({ success: false, error: err.message });
       }
       if (results[0].count > 0) {
+        // slot already taken
         return res.status(409).json({ success: false, error: 'Time slot already booked' });
       }
 
+      // 2) Try inserting
       const sql = `INSERT INTO bookings 
                      (name, email, phone, service, price, date, time, message) 
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
@@ -79,17 +72,24 @@ app.post('/api/book', (req, res) => {
         [name, email, phone, service, price, date, time, message],
         (err, result) => {
           if (err) {
+            // **Catch duplicate‐entry from UNIQUE constraint**
             if (err.code === 'ER_DUP_ENTRY') {
-              return res.status(409).json({ success: false, error: 'Time slot already booked' });
+              return res
+                .status(409)
+                .json({ success: false, error: 'Time slot already booked' });
             }
-            return res.status(500).json({ success: false, error: err.message });
+            return res
+              .status(500)
+              .json({ success: false, error: err.message });
           }
+          // Success!
           res.status(201).json({ success: true, bookingId: result.insertId });
         }
       );
     }
   );
 });
+
 
 // 2) Admin login
 app.post('/api/admin/login', (req, res) => {
@@ -138,9 +138,7 @@ app.put('/api/admin/bookings/:id', (req, res) => {
   }
   const { id } = req.params;
   const { name, email, phone, service, price, date, time, message } = req.body;
-  const sql = `UPDATE bookings 
-                  SET name=?, email=?, phone=?, service=?, price=?, date=?, time=?, message=?
-                WHERE id=?`;
+  const sql = `UPDATE bookings SET name=?, email=?, phone=?, service=?, price=?, date=?, time=?, message=? WHERE id=?`;
   db.query(sql, [name, email, phone, service, price, date, time, message, id], (err) => {
     if (err) {
       return res.status(500).json({ success: false, error: err.message });
@@ -162,40 +160,43 @@ app.delete('/api/admin/bookings/:id', (req, res) => {
   });
 });
 
-// 7) Get available (unbooked) time slots for a specific date
+// Define your business hours and slot interval
+const ALL_TIME_SLOTS = [
+  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+  "15:00", "15:30", "16:00", "16:30", "17:00"
+];
+
+// Endpoint to get available (unbooked) time slots for a specific date
 app.get('/api/available-times', (req, res) => {
   const { date } = req.query;
   if (!date) {
     return res.status(400).json({ success: false, error: 'Missing date parameter' });
   }
-
-  const sql = `
-    SELECT DATE_FORMAT(time, '%H:%i') AS time
-      FROM bookings
-     WHERE date = ?
-  `;
-
-  db.query(sql, [date], (err, rows) => {
-    if (err) return res.status(500).json({ success: false, error: err.message });
-
+  db.query('SELECT time FROM bookings WHERE date = ?', [date], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
     const bookedTimes = rows.map(r => r.time);
-    const available   = ALL_TIME_SLOTS.filter(t => !bookedTimes.includes(t));
-    res.json({ success: true, times: available });
+    const availableTimes = ALL_TIME_SLOTS.filter(t => !bookedTimes.includes(t));
+    res.json({ success: true, times: availableTimes });
   });
 });
 
-// 8) (Optional) Get booked times for a specific date
+// Get booked times for a specific date
 app.get('/api/booked-times', (req, res) => {
   const { date } = req.query;
   if (!date) {
     return res.status(400).json({ success: false, error: 'Missing date parameter' });
   }
-  db.query('SELECT DATE_FORMAT(time, "%H:%i") AS time FROM bookings WHERE date = ?', [date], (err, rows) => {
-    if (err) return res.status(500).json({ success: false, error: err.message });
-    res.json({ success: true, times: rows.map(r => r.time) });
+  db.query('SELECT time FROM bookings WHERE date = ?', [date], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ success: false, error: err.message });
+    }
+    const times = rows.map(r => r.time);
+    res.json({ success: true, times });
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Bookings API listening on port ${PORT}`);
-});
+// Start server
+app.listen(PORT, () => console.log(`Bookings API listening on port ${PORT}`));
