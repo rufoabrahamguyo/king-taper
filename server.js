@@ -42,7 +42,7 @@ app.use(session({
 // 4) Database pool
 const db = mysql.createPool({
   host:     process.env.MYSQLHOST,
-  user:     process.env.MYSQLUSER,
+  username:     process.env.MYSQLUSER,
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQLDATABASE,
   port:     process.env.MYSQLPORT
@@ -108,8 +108,8 @@ app.post('/api/book', (req, res) => {
 
 // 6.2) Admin login
 app.post('/api/admin/login', (req, res) => {
-  const { user, pass } = req.body;
-  if (user === process.env.ADMIN_USER && pass === process.env.ADMIN_PASS) {
+  const { username, password } = req.body;
+  if (username === process.env.ADMIN_USER && password === process.env.ADMIN_PASS) {
     req.session.admin = true;
     return res.json({ success: true });
   }
