@@ -36,7 +36,12 @@ if (contactForm) {
       return;
     }
     try {
-      const response = await fetch('https://king-taper-production.up.railway.app/api/send-email', {
+      // Use relative URL for same-domain requests, or configurable URL for cross-domain
+      const apiUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3001/api/send-email'
+        : '/api/send-email';
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
