@@ -18,13 +18,7 @@
 - [ ] Test database connection
 - [ ] Ensure proper database permissions
 
-### 3. Google Calendar Integration
-- [ ] Set up Google Cloud Project
-- [ ] Enable Google Calendar API
-- [ ] Create service account
-- [ ] Download service account key JSON
-- [ ] Share calendar with service account
-- [ ] Test calendar integration
+
 
 ### 4. Security
 - [ ] Generate strong session secret
@@ -63,7 +57,6 @@
 ### 1. Functionality Tests
 - [ ] Test booking form
 - [ ] Test admin login
-- [ ] Test Google Calendar integration
 - [ ] Test database operations
 - [ ] Test session management
 
@@ -94,9 +87,7 @@ SESSION_SECRET=your_very_long_random_string_here
 ADMIN_USER=admin
 ADMIN_PASS=your_secure_password
 
-# Google Calendar
-GOOGLE_SERVICE_ACCOUNT_KEY={"type":"service_account",...}
-GOOGLE_CALENDAR_ID=your_calendar@gmail.com
+
 
 # URLs
 FRONTEND_URL=https://yourdomain.com
@@ -108,7 +99,7 @@ PORT=3001
 
 1. **Environment variables not loaded**: Check `.env.production` file exists
 2. **Database connection failed**: Verify credentials and network access
-3. **Google Calendar errors**: Check service account permissions
+
 4. **CORS issues**: Verify FRONTEND_URL is correct
 5. **Session not working**: Check SESSION_SECRET is set
 
@@ -118,14 +109,14 @@ If you encounter issues:
 1. Check server logs for error messages
 2. Verify all environment variables are set
 3. Test database connection manually
-4. Check Google Calendar API status
+
 5. Review hosting platform documentation
 
 ## 🎉 Success!
 
 Once deployed successfully:
 - ✅ Your app will be accessible at your domain
-- ✅ Bookings will automatically sync with Google Calendar
+
 - ✅ Admin panel will be secure and functional
 - ✅ Database will store all booking data
 - ✅ Sessions will work properly across domains

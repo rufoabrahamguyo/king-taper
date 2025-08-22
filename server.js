@@ -9,7 +9,7 @@ const mysql = require('mysql2');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const session = require('express-session');
-const GoogleCalendarService = require('./googleCalendar');
+
 const config = require('./config');
 
 const app = express();
@@ -54,8 +54,7 @@ const db = mysql.createPool({
   port: process.env.MYSQLPORT
 });
 
-// 6) Google Calendar service
-const googleCalendar = new GoogleCalendarService();
+
 
 // Ensure unique constraint and add calendar_event_id column if it doesn't exist
 db.query(
@@ -144,26 +143,11 @@ app.post('/api/book', async (req, res) => {
     const bookingId = insertResult.insertId;
     const booking = { name, email, phone, service, price, date, time, message };
 
-    // Add to Google Calendar
-    const calendarResult = await googleCalendar.addBookingToCalendar(booking);
-    
-    if (calendarResult.success) {
-      // Update database with calendar event ID
-      await db.promise().query(
-        'UPDATE bookings SET calendar_event_id = ? WHERE id = ?',
-        [calendarResult.eventId, bookingId]
-      );
-      
-      console.log(`✅ Booking ${bookingId} created and added to Google Calendar: ${calendarResult.eventId}`);
-    } else {
-      console.log(`⚠️ Booking ${bookingId} created but failed to add to Google Calendar: ${calendarResult.error}`);
-    }
+
 
     res.status(201).json({ 
       success: true, 
-      bookingId: bookingId,
-      calendarEventId: calendarResult.success ? calendarResult.eventId : null,
-      calendarEventUrl: calendarResult.success ? calendarResult.eventUrl : null
+      bookingId: bookingId
     });
 
   } catch (error) {
@@ -223,9 +207,9 @@ app.put('/api/admin/bookings/:id', async (req, res) => {
   const { name, email, phone, service, price, date, time, message } = req.body;
 
   try {
-    // Get current booking to check if it has a calendar event
+    // Check if booking exists
     const [currentBooking] = await db.promise().query(
-      'SELECT calendar_event_id FROM bookings WHERE id = ?',
+      'SELECT id FROM bookings WHERE id = ?',
       [id]
     );
 
@@ -239,20 +223,7 @@ app.put('/api/admin/bookings/:id', async (req, res) => {
       [name, email, phone, service, price, date, time, message, id]
     );
 
-    // Update Google Calendar event if it exists
-    if (currentBooking[0].calendar_event_id) {
-      const booking = { name, email, phone, service, price, date, time, message };
-      const calendarResult = await googleCalendar.updateEventInCalendar(
-        currentBooking[0].calendar_event_id, 
-        booking
-      );
-      
-      if (calendarResult.success) {
-        console.log(`✅ Booking ${id} updated in Google Calendar`);
-      } else {
-        console.log(`⚠️ Failed to update booking ${id} in Google Calendar: ${calendarResult.error}`);
-      }
-    }
+
 
     res.json({ success: true });
 
@@ -267,9 +238,9 @@ app.delete('/api/admin/bookings/:id', async (req, res) => {
   if (!req.session.admin) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
   try {
-    // Get calendar event ID before deleting
+    // Check if booking exists
     const [booking] = await db.promise().query(
-      'SELECT calendar_event_id FROM bookings WHERE id = ?',
+      'SELECT id FROM bookings WHERE id = ?',
       [req.params.id]
     );
 
@@ -277,15 +248,7 @@ app.delete('/api/admin/bookings/:id', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Booking not found' });
     }
 
-    // Delete from Google Calendar if it exists
-    if (booking[0].calendar_event_id) {
-      const calendarResult = await googleCalendar.deleteEventFromCalendar(booking[0].calendar_event_id);
-      if (calendarResult.success) {
-        console.log(`✅ Event deleted from Google Calendar: ${booking[0].calendar_event_id}`);
-      } else {
-        console.log(`⚠️ Failed to delete event from Google Calendar: ${calendarResult.error}`);
-      }
-    }
+
 
     // Delete from database
     await db.promise().query('DELETE FROM bookings WHERE id=?', [req.params.id]);

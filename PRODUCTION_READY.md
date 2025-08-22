@@ -41,7 +41,7 @@ nano .env.production
 - Database credentials
 - Session secret
 - Admin password
-- Google Calendar API key
+
 - Your production domain
 
 ### 2. Test Locally
@@ -83,7 +83,7 @@ npm run prod
 ## 📱 Features Ready
 
 - ✅ Booking system
-- ✅ Google Calendar integration
+
 - ✅ Admin panel
 - ✅ Time slot management
 - ✅ Database storage
