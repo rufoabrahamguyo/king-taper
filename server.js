@@ -19,6 +19,18 @@ const app = express();
 // 2) Trust proxy (for Railway/Netlify cookies)
 app.set('trust proxy', 1);
 
+// Production security headers
+if (NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    // Security headers
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+  });
+}
+
 const PORT = process.env.PORT || 3001;
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
@@ -41,11 +53,13 @@ app.use(session({
   }
 }));
 
-// 4) Debug session logging
-app.use((req, res, next) => {
-  console.log('Session:', req.session);
-  next();
-});
+// 4) Session logging (only in development)
+if (NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    console.log('Session:', req.session);
+    next();
+  });
+}
 
 // 5) MySQL connection pool
 const db = mysql.createPool({
@@ -60,16 +74,20 @@ const db = mysql.createPool({
 db.getConnection((err, connection) => {
   if (err) {
     console.error('❌ Database connection failed:', err.message);
-    console.error('🔍 Environment variables:');
-    console.error('  MYSQLHOST:', process.env.MYSQLHOST);
-    console.error('  MYSQLUSER:', process.env.MYSQLUSER);
-    console.error('  MYSQLDATABASE:', process.env.MYSQLDATABASE);
-    console.error('  MYSQLPORT:', process.env.MYSQLPORT);
-    console.error('  NODE_ENV:', process.env.NODE_ENV);
+    if (NODE_ENV !== 'production') {
+      console.error('🔍 Environment variables:');
+      console.error('  MYSQLHOST:', process.env.MYSQLHOST);
+      console.error('  MYSQLUSER:', process.env.MYSQLUSER);
+      console.error('  MYSQLDATABASE:', process.env.MYSQLDATABASE);
+      console.error('  MYSQLPORT:', process.env.MYSQLPORT);
+      console.error('  NODE_ENV:', process.env.NODE_ENV);
+    }
   } else {
     console.log('✅ Database connected successfully');
-    console.log('  Host:', process.env.MYSQLHOST);
-    console.log('  Database:', process.env.MYSQLDATABASE);
+    if (NODE_ENV !== 'production') {
+      console.log('  Host:', process.env.MYSQLHOST);
+      console.log('  Database:', process.env.MYSQLDATABASE);
+    }
     connection.release();
   }
 });
