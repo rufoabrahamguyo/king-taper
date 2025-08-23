@@ -50,7 +50,8 @@ app.use(session({
     secure: NODE_ENV === 'production',
     sameSite: NODE_ENV === 'production' ? 'none' : 'lax',
     httpOnly: true
-  }
+  },
+  store: NODE_ENV === 'production' ? undefined : undefined // Use default store for now
 }));
 
 // 4) Session logging (only in development)
@@ -94,7 +95,7 @@ db.getConnection((err, connection) => {
 
 
 
-// Ensure unique constraint and add calendar_event_id column if it doesn't exist
+// Ensure unique constraint on bookings (date, time)
 db.query(
   `ALTER TABLE bookings ADD CONSTRAINT uq_bookings_date_time UNIQUE (date, time)`,
   (err) => {
@@ -106,68 +107,26 @@ db.query(
   }
 );
 
-// Add calendar_event_id column if it doesn't exist
+// Add database index for faster date queries (MySQL 5.7+ compatible)
 db.query(
-  `SHOW COLUMNS FROM bookings LIKE 'calendar_event_id'`,
+  `SHOW INDEX FROM bookings WHERE Key_name = 'idx_bookings_date'`,
   (err, results) => {
     if (err) {
-      console.error('❌ Could not check calendar_event_id column:', err);
+      console.error('❌ Could not check date index:', err);
     } else if (results.length === 0) {
-      // Column doesn't exist, add it
+      // Index doesn't exist, add it
       db.query(
-        `ALTER TABLE bookings ADD COLUMN calendar_event_id VARCHAR(255)`,
+        `CREATE INDEX idx_bookings_date ON bookings (date)`,
         (addErr) => {
           if (addErr) {
-            console.error('❌ Could not add calendar_event_id column:', addErr);
+            console.error('❌ Could not add date index to bookings:', addErr);
           } else {
-            console.log('✅ Calendar event ID column added successfully.');
+            console.log('✅ Date index on bookings table added.');
           }
         }
       );
     } else {
-      console.log('✅ Calendar event ID column already exists.');
-    }
-  }
-);
-
-// PERFORMANCE IMPROVEMENT: Add database indexes for faster date queries
-db.query(
-  `CREATE INDEX IF NOT EXISTS idx_bookings_date ON bookings (date)`,
-  (err) => {
-    if (err && err.code !== 'ER_DUP_KEYNAME') {
-      console.error('❌ Could not add date index to bookings:', err);
-    } else {
-      console.log('✅ Date index on bookings table ensured.');
-    }
-  }
-);
-
-db.query(
-  `CREATE INDEX IF NOT EXISTS idx_blocked_slots_date ON blocked_time_slots (date)`,
-  (err) => {
-    if (err && err.code !== 'ER_DUP_KEYNAME') {
-      console.error('❌ Could not add date index to blocked_time_slots:', err);
-    } else {
-      console.log('✅ Date index on blocked_time_slots table ensured.');
-    }
-  }
-);
-
-// Create blocked_time_slots table if it doesn't exist
-db.query(
-  `CREATE TABLE IF NOT EXISTS blocked_time_slots (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    date DATE NOT NULL,
-    time TIME NOT NULL,
-    reason VARCHAR(255),
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uniq_blocked_slot (date, time)
-  )`,
-  (err) => {
-    if (err) {
-      console.error('❌ Could not create blocked_time_slots table:', err);
-    } else {
-      console.log('✅ Blocked time slots table ensured.');
+      console.log('✅ Date index on bookings table already exists.');
     }
   }
 );
@@ -321,111 +280,13 @@ app.delete('/api/admin/bookings/:id', async (req, res) => {
   }
 });
 
-// --- BLOCKED TIME SLOTS MANAGEMENT ---
 
-// Get blocked time slots
-app.get('/api/admin/blocked-slots', async (req, res) => {
-  if (!req.session.admin) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
-  try {
-    const { start, end } = req.query;
-    let sql = 'SELECT * FROM blocked_time_slots';
-    const params = [];
 
-    if (start && end) {
-      sql += ' WHERE date BETWEEN ? AND ?';
-      params.push(start, end);
-    }
 
-    sql += ' ORDER BY date DESC, time ASC';
-    const [rows] = await db.promise().query(sql, params);
-    res.json({ success: true, blockedSlots: rows });
 
-  } catch (error) {
-    console.error('❌ Error fetching blocked slots:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
 
-// Add blocked time slot
-app.post('/api/admin/blocked-slots', async (req, res) => {
-  if (!req.session.admin) return res.status(401).json({ success: false, error: 'Unauthorized' });
 
-  try {
-    const { date, time, reason } = req.body;
-    
-    if (!date || !time) {
-      return res.status(400).json({ success: false, error: 'Date and time are required' });
-    }
-
-    // Check if slot is already booked
-    const [bookings] = await db.promise().query(
-      'SELECT COUNT(*) AS count FROM bookings WHERE date = ? AND time = ?',
-      [date, time]
-    );
-
-    if (bookings[0].count > 0) {
-      return res.status(409).json({ 
-        success: false, 
-        error: 'Cannot block time slot that already has a booking' 
-      });
-    }
-
-    // Check if slot is already blocked
-    const [existing] = await db.promise().query(
-      'SELECT COUNT(*) AS count FROM blocked_time_slots WHERE date = ? AND time = ?',
-      [date, time]
-    );
-
-    if (existing[0].count > 0) {
-      return res.status(409).json({ 
-        success: false, 
-        error: 'Time slot is already blocked' 
-      });
-    }
-
-    // Add blocked slot
-    const [result] = await db.promise().query(
-      'INSERT INTO blocked_time_slots (date, time, reason) VALUES (?, ?, ?)',
-      [date, time, reason || 'Blocked by admin']
-    );
-
-    console.log(`✅ Time slot blocked: ${date} ${time}`);
-    res.status(201).json({ 
-      success: true, 
-      blockedSlotId: result.insertId 
-    });
-
-  } catch (error) {
-    console.error('❌ Error blocking time slot:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// Remove blocked time slot
-app.delete('/api/admin/blocked-slots/:id', async (req, res) => {
-  if (!req.session.admin) return res.status(401).json({ success: false, error: 'Unauthorized' });
-
-  try {
-    const { id } = req.params;
-    
-    const [result] = await db.promise().query(
-      'DELETE FROM blocked_time_slots WHERE id = ?',
-      [id]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ success: false, error: 'Blocked slot not found' });
-    }
-
-    console.log(`✅ Blocked time slot removed: ${id}`);
-    res.json({ success: true });
-
-  } catch (error) {
-    console.error('❌ Error removing blocked slot:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
 
 // Available times - OPTIMIZED VERSION
 app.get('/api/available-times', async (req, res) => {
@@ -433,15 +294,14 @@ app.get('/api/available-times', async (req, res) => {
   if (!date) return res.status(400).json({ success: false, error: 'Missing date parameter' });
 
   try {
-    // OPTIMIZATION: Single query to get both booked and blocked times
-    const [results] = await db.promise().query(`
-      SELECT time, 'booked' as type FROM bookings WHERE date = ?
-      UNION ALL
-      SELECT time, 'blocked' as type FROM blocked_time_slots WHERE date = ?
-    `, [date, date]);
+    // Get only booked times for the date
+    const [bookings] = await db.promise().query(
+      'SELECT time FROM bookings WHERE date = ?',
+      [date]
+    );
 
     // Convert MySQL TIME format to HH:MM format for comparison
-    const unavailable = results.map(r => {
+    const unavailable = bookings.map(r => {
       const time = r.time;
       if (typeof time === 'string') {
         // Handle MySQL TIME format (HH:MM:SS or HH:MM)
@@ -455,7 +315,7 @@ app.get('/api/available-times', async (req, res) => {
       }
     });
 
-    // Filter out both booked and blocked times
+    // Filter out booked times
     const available = ALL_TIME_SLOTS.filter(t => !unavailable.includes(t));
     
     console.log(`📅 Date: ${date}, Available times:`, available);
@@ -467,21 +327,20 @@ app.get('/api/available-times', async (req, res) => {
   }
 });
 
-// Booked times (includes both booked and blocked) - OPTIMIZED VERSION
+// Booked times - OPTIMIZED VERSION
 app.get('/api/booked-times', async (req, res) => {
   const { date } = req.query;
   if (!date) return res.status(400).json({ success: false, error: 'Missing date parameter' });
 
   try {
-    // OPTIMIZATION: Single query to get both booked and blocked times
-    const [results] = await db.promise().query(`
-      SELECT time, 'booked' as type FROM bookings WHERE date = ?
-      UNION ALL
-      SELECT time, 'blocked' as type FROM blocked_time_slots WHERE date = ?
-    `, [date, date]);
+    // Get only booked times for the date
+    const [bookings] = await db.promise().query(
+      'SELECT time FROM bookings WHERE date = ?',
+      [date]
+    );
     
     // Convert MySQL TIME format to HH:MM format for frontend
-    const unavailableTimes = results.map(r => {
+    const unavailableTimes = bookings.map(r => {
       const time = r.time;
       if (typeof time === 'string') {
         // Handle MySQL TIME format (HH:MM:SS or HH:MM)
@@ -495,10 +354,10 @@ app.get('/api/booked-times', async (req, res) => {
       }
     });
     
-    console.log(`📅 Date: ${date}, Unavailable times:`, unavailableTimes);
+    console.log(`📅 Date: ${date}, Booked times:`, unavailableTimes);
     res.json({ success: true, times: unavailableTimes });
   } catch (error) {
-    console.error('❌ Error fetching booked/blocked times:', error);
+    console.error('❌ Error fetching booked times:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -510,17 +369,11 @@ app.get('/api/debug/times/:date', async (req, res) => {
   try {
     // Get raw time values from database
     const [bookings] = await db.promise().query('SELECT time, date FROM bookings WHERE date = ?', [date]);
-    const [blocked] = await db.promise().query('SELECT time, date FROM blocked_time_slots WHERE date = ?', [date]);
     
     res.json({
       success: true,
       date: date,
       bookings: bookings.map(b => ({
-        rawTime: b.time,
-        timeType: typeof b.time,
-        convertedTime: b.time ? b.time.toString().slice(0, 5) : null
-      })),
-      blocked: blocked.map(b => ({
         rawTime: b.time,
         timeType: typeof b.time,
         convertedTime: b.time ? b.time.toString().slice(0, 5) : null
