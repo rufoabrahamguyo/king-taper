@@ -184,7 +184,6 @@
             loginSection.style.display='none'; 
             dashboardSection.style.display='block'; 
             loadBookings(); 
-            loadBlockedSlots(); 
         }
         function showLogin() { dashboardSection.style.display='none'; loginSection.style.display='block'; }
 
@@ -192,14 +191,38 @@
         loginForm.addEventListener('submit', e => {
             e.preventDefault();
             loginError.style.display = 'none';
+            
+            const username = document.getElementById('admin-username').value;
+            const password = document.getElementById('admin-password').value;
+            
+            console.log('🔐 Login attempt:', { username, password });
+            console.log('🌐 API Base URL:', window.API_BASE_URL);
+            
             fetch(`${window.API_BASE_URL}/api/admin/login`, {
                 method:'POST', credentials:'include',
                 headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({ user:document.getElementById('admin-username').value, pass:document.getElementById('admin-password').value })
+                body:JSON.stringify({ user: username, pass: password })
             })
-            .then(r => r.json())
-            .then(data => data.success ? showDashboard() : (() => { loginError.textContent=data.error; loginError.style.display='block'; })())
-            .catch(()=>{ loginError.textContent='Server error'; loginError.style.display='block'; });
+            .then(r => {
+                console.log('📡 Response status:', r.status);
+                return r.json();
+            })
+            .then(data => {
+                console.log('📋 Response data:', data);
+                if (data.success) {
+                    console.log('✅ Login successful!');
+                    showDashboard();
+                } else {
+                    console.log('❌ Login failed:', data.error);
+                    loginError.textContent = data.error;
+                    loginError.style.display = 'block';
+                }
+            })
+            .catch(err => {
+                console.error('🚨 Login error:', err);
+                loginError.textContent = 'Server error: ' + err.message;
+                loginError.style.display = 'block';
+            });
         });
 
         // Logout handler
@@ -234,80 +257,22 @@
         }
 
         // Filter
-        filterBtn.onclick = () => { loadBookings(); loadBlockedSlots(); };
+        filterBtn.onclick = () => { loadBookings(); };
         clearFilterBtn.onclick = () => { 
             filterStart.value=''; 
             filterEnd.value=''; 
             loadBookings(); 
-            loadBlockedSlots(); 
         };
 
-        // Load blocked time slots
+        // Load blocked time slots - DISABLED
         async function loadBlockedSlots() {
-            let url = `${window.API_BASE_URL}/api/admin/blocked-slots`;
-            const start = filterStart.value, end = filterEnd.value;
-            if (start && end) url += `?start=${start}&end=${end}`;
-            
-            try {
-                const res = await fetch(url, { credentials:'include' });
-                if (res.status===401) return showLogin();
-                const data = await res.json();
-                if (!data.success) throw new Error(data.error || 'Loading error');
-                
-                blockedSlotsTable.innerHTML = data.blockedSlots.length
-                    ? data.blockedSlots.map(slot => `<tr>
-                        <td>${new Date(slot.date).toLocaleDateString()}</td>
-                        <td>${slot.time}</td>
-                        <td>${slot.reason || ''}</td>
-                        <td>
-                            <button class="delete-blocked-btn" data-id="${slot.id}" style="background:#ff6b6b; color:white; border:none; padding:0.5rem 1rem; border-radius:4px; cursor:pointer;">
-                                Remove
-                            </button>
-                        </td>
-                    </tr>`).join('')
-                    : '<tr><td colspan="4">No blocked time slots found.</td></tr>';
-            } catch (err) {
-                blockedSlotsTable.innerHTML = `<tr><td colspan="4">${err.message}</td></tr>`;
-            }
+            // Blocked slots functionality removed
+            console.log('Blocked slots functionality disabled');
         }
 
-        // Add blocked time slot
+        // Add blocked time slot - DISABLED
         addBlockedSlotBtn.onclick = async () => {
-            if (!blockDate.value || !blockTime.value) {
-                alert('Please select both date and time');
-                return;
-            }
-
-            try {
-                const res = await fetch(`${window.API_BASE_URL}/api/admin/blocked-slots`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        date: blockDate.value,
-                        time: blockTime.value,
-                        reason: blockReason.value
-                    })
-                });
-
-                const data = await res.json();
-                if (data.success) {
-                    // Clear form
-                    blockDate.value = '';
-                    blockTime.value = '';
-                    blockReason.value = '';
-                    
-                    // Reload tables
-                    loadBlockedSlots();
-                    loadBookings();
-                    
-                    alert('Time slot blocked successfully!');
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            } catch (err) {
-                alert('Error blocking time slot: ' + err.message);
-            }
+            alert('Blocked time slots functionality has been removed');
         };
 
         // Modal & edit
