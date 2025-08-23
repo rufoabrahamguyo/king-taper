@@ -1,14 +1,10 @@
 // server.js
 
-// 1) Load environment variables from Railway (production) or local file (development)
-if (process.env.NODE_ENV === 'production') {
-  // In Railway, environment variables are already loaded
-  console.log('🚀 Production mode: Using Railway environment variables');
-} else {
-  // Local development: load from .env file
-  require('dotenv').config({ path: '.env' });
-  console.log('🔧 Development mode: Using local .env file');
-}
+// 1) Load environment variables from the right file
+const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
+require('dotenv').config({ path: envFile });
+console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`📁 Config file: ${envFile}`);
 
 const express = require('express');
 const mysql = require('mysql2');

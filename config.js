@@ -6,8 +6,8 @@ const config = {
     frontendUrl: 'http://localhost:3000'
   },
   production: {
-    apiBaseUrl: 'https://kingtaper.com',
-    frontendUrl: 'https://kingtaper.com'
+    apiBaseUrl: process.env.API_BASE_URL || 'https://kingtaper.com',
+    frontendUrl: process.env.FRONTEND_URL || 'https://kingtaper.com'
   }
 };
 
