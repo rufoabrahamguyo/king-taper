@@ -14,16 +14,7 @@ const getApiConfig = () => {
     };
   }
   
-  // Production environment with custom domain
-  if (hostname === 'kingtaper.com') {
-    return {
-      apiBaseUrl: 'https://kingtaper.com',
-      isDevelopment: false,
-      isProduction: true
-    };
-  }
-  
-  // Fallback for other domains (Railway preview, etc.)
+  // Production environment (kingtaper.com or Railway preview)
   return {
     apiBaseUrl: `${protocol}//${hostname}`,
     isDevelopment: false,

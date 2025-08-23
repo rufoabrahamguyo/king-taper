@@ -1,8 +1,14 @@
 // server.js
 
-// 1) Load environment variables from the right file
-const envFile = process.env.NODE_ENV === 'production' ? '.env.production' : '.env';
-require('dotenv').config({ path: envFile });
+// 1) Load environment variables from Railway (production) or local file (development)
+if (process.env.NODE_ENV === 'production') {
+  // In Railway, environment variables are already loaded
+  console.log('🚀 Production mode: Using Railway environment variables');
+} else {
+  // Local development: load from .env file
+  require('dotenv').config({ path: '.env' });
+  console.log('🔧 Development mode: Using local .env file');
+}
 
 const express = require('express');
 const mysql = require('mysql2');
@@ -22,9 +28,7 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // 3) Middleware
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? [config.frontendUrl, `https://${process.env.CUSTOM_DOMAIN}`]
-    : config.frontendUrl,
+  origin: config.frontendUrl,
   credentials: true
 }));
 app.use(bodyParser.json());
@@ -54,6 +58,24 @@ const db = mysql.createPool({
   password: process.env.MYSQLPASSWORD,
   database: process.env.MYSQLDATABASE,
   port: process.env.MYSQLPORT
+});
+
+// Test database connection
+db.getConnection((err, connection) => {
+  if (err) {
+    console.error('❌ Database connection failed:', err.message);
+    console.error('🔍 Environment variables:');
+    console.error('  MYSQLHOST:', process.env.MYSQLHOST);
+    console.error('  MYSQLUSER:', process.env.MYSQLUSER);
+    console.error('  MYSQLDATABASE:', process.env.MYSQLDATABASE);
+    console.error('  MYSQLPORT:', process.env.MYSQLPORT);
+    console.error('  NODE_ENV:', process.env.NODE_ENV);
+  } else {
+    console.log('✅ Database connected successfully');
+    console.log('  Host:', process.env.MYSQLHOST);
+    console.log('  Database:', process.env.MYSQLDATABASE);
+    connection.release();
+  }
 });
 
 
