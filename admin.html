@@ -46,7 +46,7 @@
         <!-- Login Section -->
         <div id="admin-login-section" class="admin-login">
             <div id="login-error" class="error-message" style="display:none;"></div>
-            <form id="admin-login-form">
+            <form id="admin-login-form" method="POST">
                 <label for="admin-username">Username</label>
                 <input type="text" id="admin-username" name="username" required>
                 <label for="admin-password">Password</label>
@@ -67,62 +67,10 @@
                 <button id="clear-filter-btn">Clear</button>
             </div>
             
-            <!-- Blocked Time Slots Management -->
+            <!-- Blocked Time Slots Management - REMOVED -->
             <div style="margin-bottom:2rem; padding:1rem; background:#f5f5f5; border-radius:8px;">
                 <h3 style="margin-top:0; color:var(--primary);">Blocked Time Slots</h3>
-                <div style="display:grid; grid-template-columns:1fr 1fr 1fr auto; gap:1rem; align-items:end; margin-bottom:1rem;">
-                    <div>
-                        <label for="block-date">Date:</label>
-                        <input type="date" id="block-date" required>
-                    </div>
-                    <div>
-                        <label for="block-time">Time:</label>
-                        <select id="block-time" required>
-                            <option value="">Select Time</option>
-                            <option value="09:00">9:00 AM</option>
-                            <option value="09:40">9:40 AM</option>
-                            <option value="10:20">10:20 AM</option>
-                            <option value="11:00">11:00 AM</option>
-                            <option value="11:40">11:40 AM</option>
-                            <option value="12:20">12:20 PM</option>
-                            <option value="13:00">1:00 PM</option>
-                            <option value="13:40">1:40 PM</option>
-                            <option value="14:20">2:20 PM</option>
-                            <option value="15:00">3:00 PM</option>
-                            <option value="15:40">3:40 PM</option>
-                            <option value="16:20">4:20 PM</option>
-                            <option value="17:00">5:00 PM</option>
-                            <option value="17:40">5:40 PM</option>
-                            <option value="18:20">6:20 PM</option>
-                            <option value="19:00">7:00 PM</option>
-                            <option value="19:40">7:40 PM</option>
-                            <option value="20:20">8:20 PM</option>
-                            <option value="21:00">9:00 PM</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="block-reason">Reason:</label>
-                        <input type="text" id="block-reason" placeholder="e.g., Lunch break, Maintenance">
-                    </div>
-                    <button id="add-blocked-slot-btn" style="background:var(--accent); color:var(--primary); border:none; padding:0.75rem 1.5rem; border-radius:8px; cursor:pointer; font-weight:bold;">
-                        Block Slot
-                    </button>
-                </div>
-                
-                <!-- Blocked Slots Table -->
-                <div style="overflow-x:auto;">
-                    <table class="admin-table" id="blocked-slots-table" style="margin-top:1rem;">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Time</th>
-                                <th>Reason</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
+                <p style="color: #666; font-style: italic;">This functionality has been removed for security and simplicity.</p>
             </div>
             <table class="admin-table" id="bookings-table">
                 <thead>
@@ -173,11 +121,8 @@
         const modal = document.getElementById('booking-modal');
         const closeModalBtn = document.getElementById('close-modal-btn');
         const editForm = document.getElementById('edit-booking-form');
-        const addBlockedSlotBtn = document.getElementById('add-blocked-slot-btn');
-        const blockDate = document.getElementById('block-date');
-        const blockTime = document.getElementById('block-time');
-        const blockReason = document.getElementById('block-reason');
-        const blockedSlotsTable = document.querySelector('#blocked-slots-table tbody');
+
+
 
         // Show/hide
         function showDashboard() { 
