@@ -377,6 +377,10 @@
           const dateInput = document.getElementById('date');
           const timeSelect = document.getElementById('time');
 
+          // PERFORMANCE IMPROVEMENT: Simple cache for booked times
+          const bookedTimesCache = new Map();
+          const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
           serviceOptions.forEach(option => {
             option.addEventListener('click', function () {
               serviceOptions.forEach(opt => opt.classList.remove('selected'));
@@ -386,89 +390,101 @@
             });
           });
 
-          // Highlight booked times in red
+          // Highlight booked times in red - OPTIMIZED VERSION
           function highlightBookedTimes(date) {
             if (!date) return;
             console.log('Fetching booked times for date:', date);
+            
+            // Check cache first
+            const cached = bookedTimesCache.get(date);
+            if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+              console.log('Using cached data for:', date);
+              updateTimeSelect(cached.times);
+              return;
+            }
             
             // Show loading state
             timeSelect.classList.add('time-select-loading');
             timeSelect.innerHTML = '<option value="">Loading available times...</option>';
             
+            // PERFORMANCE IMPROVEMENT: Add timeout to prevent indefinite loading
+            const timeoutId = setTimeout(() => {
+              console.warn('API call timeout for date:', date);
+              timeSelect.innerHTML = '<option value="">Loading timeout - please try again</option>';
+              timeSelect.classList.remove('time-select-loading');
+            }, 10000); // 10 second timeout
+            
             fetch(`/api/booked-times?date=${encodeURIComponent(date)}`)
               .then(res => res.json())
               .then(data => {
+                clearTimeout(timeoutId); // Clear timeout on success
                 console.log('Booked times response:', data);
                 if (!data.success) return;
-                const booked = new Set(data.times);
-                console.log('Booked times:', Array.from(booked));
-                const allTimes = [
-                  "09:00","09:40","10:20","11:00","11:40","12:20","13:00","13:40","14:20","15:00","15:40","16:20","17:00","17:40","18:20","19:00","19:40","20:20","21:00"
-                ];
                 
-                // Clear the time select
-                timeSelect.innerHTML = '';
+                // Cache the result
+                bookedTimesCache.set(date, {
+                  times: data.times,
+                  timestamp: Date.now()
+                });
                 
-                // Check if all slots are booked
-                const availableTimes = allTimes.filter(time => !booked.has(time));
-                
-                if (availableTimes.length === 0) {
-                  // All slots are booked
-                  timeSelect.innerHTML = '<option value="">Time slots fully booked</option>';
-                  timeSelect.disabled = true;
-                  timeSelect.classList.add('time-select-disabled');
-                  timeSelect.classList.add('fully-booked');
-                } else {
-                  // Add placeholder and available times
-                  timeSelect.innerHTML = '<option value="">Select Time</option>';
-                  availableTimes.forEach(time => {
-                    const opt = document.createElement('option');
-                    opt.value = time;
-                    opt.textContent = time.replace(/^(\d{1,2}):(\d{2})$/, (m, h, min) => {
-                      let hour = parseInt(h, 10);
-                      let ampm = hour >= 12 ? 'PM' : 'AM';
-                      if (hour > 12) hour -= 12;
-                      if (hour === 0) hour = 12;
-                      return `${hour}:${min} ${ampm}`;
-                    });
-                    timeSelect.appendChild(opt);
-                  });
-                  timeSelect.disabled = false;
-                  timeSelect.classList.remove('time-select-disabled');
-                  timeSelect.classList.remove('fully-booked');
-                }
-                
-                // Remove loading state and add update animation
-                timeSelect.classList.remove('time-select-loading');
-                timeSelect.classList.add('slot-updated');
-                setTimeout(() => timeSelect.classList.remove('slot-updated'), 500);
-                
-                // Hide status message
-                timeStatus.style.display = 'none';
+                updateTimeSelect(data.times);
               })
               .catch(error => {
+                clearTimeout(timeoutId); // Clear timeout on error
                 console.error('Error fetching booked times:', error);
                 // Fallback to showing all times if API fails
-                timeSelect.innerHTML = '<option value="">Select Time</option>';
-                const allTimes = [
-                  "09:00","09:40","10:20","11:00","11:40","12:20","13:00","13:40","14:20","15:00","15:40","16:20","17:00","17:40","18:20","19:00","19:40","20:20","21:00"
-                ];
-                allTimes.forEach(time => {
-                  const opt = document.createElement('option');
-                  opt.value = time;
-                  opt.textContent = time.replace(/^(\d{1,2}):(\d{2})$/, (m, h, min) => {
-                    let hour = parseInt(h, 10);
-                    let ampm = hour >= 12 ? 'PM' : 'AM';
-                    if (hour > 12) hour -= 12;
-                    if (hour === 0) hour = 12;
-                    return `${hour}:${min} ${ampm}`;
-                  });
-                  timeSelect.appendChild(opt);
-                });
-                timeSelect.disabled = false;
-                timeSelect.classList.remove('time-select-disabled');
-                timeSelect.classList.remove('fully-booked');
+                updateTimeSelect([]);
               });
+          }
+
+          // Helper function to update time select
+          function updateTimeSelect(bookedTimes) {
+            const booked = new Set(bookedTimes);
+            console.log('Booked times:', Array.from(booked));
+            const allTimes = [
+              "09:00","09:40","10:20","11:00","11:40","12:20","13:00","13:40","14:20","15:00","15:40","16:20","17:00","17:40","18:20","19:00","19:40","20:20","21:00"
+            ];
+            
+            // Clear the time select
+            timeSelect.innerHTML = '';
+            
+            // Check if all slots are booked
+            const availableTimes = allTimes.filter(time => !booked.has(time));
+            
+            if (availableTimes.length === 0) {
+              // All slots are booked
+              timeSelect.innerHTML = '<option value="">Time slots fully booked</option>';
+              timeSelect.disabled = true;
+              timeSelect.classList.add('time-select-disabled');
+              timeSelect.classList.add('fully-booked');
+            } else {
+              // Add placeholder and available times
+              timeSelect.innerHTML = '<option value="">Select Time</option>';
+              availableTimes.forEach(time => {
+                const opt = document.createElement('option');
+                opt.value = time;
+                opt.textContent = time.replace(/^(\d{1,2}):(\d{2})$/, (m, h, min) => {
+                  let hour = parseInt(h, 10);
+                  let ampm = hour >= 12 ? 'PM' : 'AM';
+                  if (hour > 12) hour -= 12;
+                  if (hour === 0) hour = 12;
+                  return `${hour}:${min} ${ampm}`;
+                });
+                timeSelect.appendChild(opt);
+              });
+              timeSelect.disabled = false;
+              timeSelect.classList.remove('time-select-disabled');
+              timeSelect.classList.remove('fully-booked');
+            }
+            
+            // Remove loading state and add update animation
+            timeSelect.classList.remove('time-select-loading');
+            timeSelect.classList.add('slot-updated');
+            setTimeout(() => timeSelect.classList.remove('slot-updated'), 500);
+            
+            // Hide status message
+            const timeStatus = document.getElementById('time-status');
+            if (timeStatus) timeStatus.style.display = 'none';
           }
           dateInput.addEventListener('change', function() {
             highlightBookedTimes(this.value);

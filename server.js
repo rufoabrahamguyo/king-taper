@@ -92,6 +92,29 @@ db.query(
   }
 );
 
+// PERFORMANCE IMPROVEMENT: Add database indexes for faster date queries
+db.query(
+  `CREATE INDEX IF NOT EXISTS idx_bookings_date ON bookings (date)`,
+  (err) => {
+    if (err && err.code !== 'ER_DUP_KEYNAME') {
+      console.error('❌ Could not add date index to bookings:', err);
+    } else {
+      console.log('✅ Date index on bookings table ensured.');
+    }
+  }
+);
+
+db.query(
+  `CREATE INDEX IF NOT EXISTS idx_blocked_slots_date ON blocked_time_slots (date)`,
+  (err) => {
+    if (err && err.code !== 'ER_DUP_KEYNAME') {
+      console.error('❌ Could not add date index to blocked_time_slots:', err);
+    } else {
+      console.log('✅ Date index on blocked_time_slots table ensured.');
+    }
+  }
+);
+
 // Create blocked_time_slots table if it doesn't exist
 db.query(
   `CREATE TABLE IF NOT EXISTS blocked_time_slots (
@@ -413,20 +436,21 @@ app.get('/api/available-times', async (req, res) => {
   }
 });
 
-// Booked times (includes both booked and blocked)
+// Booked times (includes both booked and blocked) - OPTIMIZED VERSION
 app.get('/api/booked-times', async (req, res) => {
   const { date } = req.query;
   if (!date) return res.status(400).json({ success: false, error: 'Missing date parameter' });
 
   try {
-    // Get booked times
-    const [bookedRows] = await db.promise().query('SELECT time FROM bookings WHERE date=?', [date]);
-    
-    // Get blocked times
-    const [blockedRows] = await db.promise().query('SELECT time FROM blocked_time_slots WHERE date=?', [date]);
+    // OPTIMIZATION: Single query to get both booked and blocked times
+    const [results] = await db.promise().query(`
+      SELECT time, 'booked' as type FROM bookings WHERE date = ?
+      UNION ALL
+      SELECT time, 'blocked' as type FROM blocked_time_slots WHERE date = ?
+    `, [date, date]);
     
     // Convert MySQL TIME format to HH:MM format for frontend
-    const bookedTimes = bookedRows.map(r => {
+    const unavailableTimes = results.map(r => {
       const time = r.time;
       if (typeof time === 'string') {
         return time.slice(0, 5);
@@ -436,21 +460,8 @@ app.get('/api/booked-times', async (req, res) => {
         return time.toString().slice(0, 5);
       }
     });
-
-    const blockedTimes = blockedRows.map(r => {
-      const time = r.time;
-      if (typeof time === 'string') {
-        return time.slice(0, 5);
-      } else if (time instanceof Date) {
-        return time.toString().slice(0, 5);
-      } else {
-        return time.toString().slice(0, 5);
-      }
-    });
     
-    // Return both booked and blocked times
-    const allUnavailable = [...bookedTimes, ...blockedTimes];
-    res.json({ success: true, times: allUnavailable });
+    res.json({ success: true, times: unavailableTimes });
   } catch (error) {
     console.error('❌ Error fetching booked/blocked times:', error);
     res.status(500).json({ success: false, error: error.message });
