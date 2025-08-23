@@ -548,10 +548,8 @@
             };
         
             console.log('Submitting booking to backend:', bookingData);
-            // Set API URL based on environment
-            const API_URL = window.location.hostname === 'localhost'
-              ? 'http://localhost:3001/api/book'
-              : '/api/book';
+            // Use the dynamic configuration
+            const API_URL = window.KingTaperConfig.apiBaseUrl + '/api/book';
             console.log('Server URL:', API_URL);
         
             const message = `New Booking Request:\n

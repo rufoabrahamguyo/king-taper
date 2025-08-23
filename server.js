@@ -22,7 +22,9 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // 3) Middleware
 app.use(cors({
-  origin: config.frontendUrl,
+  origin: process.env.NODE_ENV === 'production' 
+    ? [config.frontendUrl, `https://${process.env.CUSTOM_DOMAIN}`]
+    : config.frontendUrl,
   credentials: true
 }));
 app.use(bodyParser.json());
@@ -389,45 +391,38 @@ app.delete('/api/admin/blocked-slots/:id', async (req, res) => {
   }
 });
 
-// Available times
+// Available times - OPTIMIZED VERSION
 app.get('/api/available-times', async (req, res) => {
   const { date } = req.query;
   if (!date) return res.status(400).json({ success: false, error: 'Missing date parameter' });
 
   try {
-    // Get booked times
-    const [bookedRows] = await db.promise().query('SELECT time FROM bookings WHERE date=?', [date]);
-    
-    // Get blocked times
-    const [blockedRows] = await db.promise().query('SELECT time FROM blocked_time_slots WHERE date=?', [date]);
+    // OPTIMIZATION: Single query to get both booked and blocked times
+    const [results] = await db.promise().query(`
+      SELECT time, 'booked' as type FROM bookings WHERE date = ?
+      UNION ALL
+      SELECT time, 'blocked' as type FROM blocked_time_slots WHERE date = ?
+    `, [date, date]);
 
     // Convert MySQL TIME format to HH:MM format for comparison
-    const booked = bookedRows.map(r => {
+    const unavailable = results.map(r => {
       const time = r.time;
       if (typeof time === 'string') {
-        return time.slice(0, 5);
+        // Handle MySQL TIME format (HH:MM:SS or HH:MM)
+        return time.slice(0, 5); // Extract HH:MM part
       } else if (time instanceof Date) {
+        // Handle Date objects
         return time.toTimeString().slice(0, 5);
       } else {
-        return time.toString().slice(0, 5);
-      }
-    });
-
-    const blocked = blockedRows.map(r => {
-      const time = r.time;
-      if (typeof time === 'string') {
-        return time.slice(0, 5);
-      } else if (time instanceof Date) {
-        return time.toTimeString().slice(0, 5);
-      } else {
+        // Handle other formats
         return time.toString().slice(0, 5);
       }
     });
 
     // Filter out both booked and blocked times
-    const unavailable = [...booked, ...blocked];
     const available = ALL_TIME_SLOTS.filter(t => !unavailable.includes(t));
     
+    console.log(`📅 Date: ${date}, Available times:`, available);
     res.json({ success: true, times: available });
 
   } catch (error) {
@@ -453,17 +448,50 @@ app.get('/api/booked-times', async (req, res) => {
     const unavailableTimes = results.map(r => {
       const time = r.time;
       if (typeof time === 'string') {
-        return time.slice(0, 5);
+        // Handle MySQL TIME format (HH:MM:SS or HH:MM)
+        return time.slice(0, 5); // Extract HH:MM part
       } else if (time instanceof Date) {
+        // Handle Date objects
         return time.toTimeString().slice(0, 5);
       } else {
+        // Handle other formats
         return time.toString().slice(0, 5);
       }
     });
     
+    console.log(`📅 Date: ${date}, Unavailable times:`, unavailableTimes);
     res.json({ success: true, times: unavailableTimes });
   } catch (error) {
     console.error('❌ Error fetching booked/blocked times:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Debug endpoint to check time column values
+app.get('/api/debug/times/:date', async (req, res) => {
+  const { date } = req.params;
+  
+  try {
+    // Get raw time values from database
+    const [bookings] = await db.promise().query('SELECT time, date FROM bookings WHERE date = ?', [date]);
+    const [blocked] = await db.promise().query('SELECT time, date FROM blocked_time_slots WHERE date = ?', [date]);
+    
+    res.json({
+      success: true,
+      date: date,
+      bookings: bookings.map(b => ({
+        rawTime: b.time,
+        timeType: typeof b.time,
+        convertedTime: b.time ? b.time.toString().slice(0, 5) : null
+      })),
+      blocked: blocked.map(b => ({
+        rawTime: b.time,
+        timeType: typeof b.time,
+        convertedTime: b.time ? b.time.toString().slice(0, 5) : null
+      }))
+    });
+  } catch (error) {
+    console.error('❌ Debug error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -490,6 +518,8 @@ app.listen(PORT, () => {
   
   if (NODE_ENV === 'production') {
     console.log('🚀 Production deployment ready');
-    console.log('📝 Remember to set all environment variables in .env.production');
+    console.log(`🌐 Custom Domain: ${process.env.CUSTOM_DOMAIN || 'Not set'}`);
+    console.log(`🔗 API Base URL: ${config.apiBaseUrl}`);
+    console.log('📝 Remember to set all environment variables in Railway dashboard');
   }
 });

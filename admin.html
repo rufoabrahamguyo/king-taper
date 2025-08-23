@@ -156,10 +156,8 @@
     </div>
 
     <script>
-        // Determine API base URL
-        window.API_BASE_URL = location.hostname === 'localhost'
-            ? 'http://localhost:3001'
-            : '';
+        // Use the dynamic configuration
+        window.API_BASE_URL = window.KingTaperConfig.apiBaseUrl;
 
         // Elements
         const loginForm = document.getElementById('admin-login-form');

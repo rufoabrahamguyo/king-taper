@@ -9,7 +9,10 @@
     "prod": "NODE_ENV=production node server.js",
     "pm2:start": "pm2 start server.js --name king-taper",
     "pm2:stop": "pm2 stop king-taper",
-    "pm2:restart": "pm2 restart king-taper"
+    "pm2:restart": "pm2 restart king-taper",
+    "railway:deploy": "railway up",
+    "railway:logs": "railway logs",
+    "railway:status": "railway status"
   },
   "dependencies": {
     "body-parser": "^1.20.3",

@@ -1,3 +1,47 @@
+// Dynamic Configuration for King Taper
+// Automatically detects environment and sets appropriate URLs
+
+const getApiConfig = () => {
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  
+  // Development environment
+  if (hostname === 'localhost') {
+    return {
+      apiBaseUrl: 'http://localhost:3001',
+      isDevelopment: true,
+      isProduction: false
+    };
+  }
+  
+  // Production environment with custom domain
+  if (hostname === 'kingtaper.com') {
+    return {
+      apiBaseUrl: 'https://kingtaper.com',
+      isDevelopment: false,
+      isProduction: true
+    };
+  }
+  
+  // Fallback for other domains (Railway preview, etc.)
+  return {
+    apiBaseUrl: `${protocol}//${hostname}`,
+    isDevelopment: false,
+    isProduction: true
+  };
+};
+
+// Global configuration object
+window.KingTaperConfig = getApiConfig();
+
+// Log configuration for debugging
+console.log('🔧 King Taper Configuration:', window.KingTaperConfig);
+
+// Export for use in other scripts
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = getApiConfig;
+}
+
 // Responsive Navigation & Dropdown
 const hamburger = document.querySelector('.hamburger');
 const navMenu = document.querySelector('.nav-menu');
@@ -323,7 +367,7 @@ if (document.getElementById('admin-dashboard-section')) {
     loginForm.addEventListener('submit', function(e) {
       e.preventDefault();
       loginError.style.display = 'none';
-      fetch(`${window.API_BASE_URL}/api/admin/login`, {
+      fetch(`${window.KingTaperConfig.apiBaseUrl}/api/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -350,7 +394,7 @@ if (document.getElementById('admin-dashboard-section')) {
   // Logout handler (session)
   if (logoutBtn) {
     logoutBtn.addEventListener('click', function() {
-      fetch(`${window.API_BASE_URL}/api/admin/logout`, {
+      fetch(`${window.KingTaperConfig.apiBaseUrl}/api/admin/logout`, {
         method: 'POST',
         credentials: 'include'
       }).then(() => {
@@ -360,7 +404,7 @@ if (document.getElementById('admin-dashboard-section')) {
   }
 
   async function fetchBookings(start, end) {
-    let url = `${window.API_BASE_URL}/api/admin/bookings`;
+    let url = `${window.KingTaperConfig.apiBaseUrl}/api/admin/bookings`;
     const params = [];
     if (start) params.push(`start=${encodeURIComponent(start)}`);
     if (end) params.push(`end=${encodeURIComponent(end)}`);
@@ -430,7 +474,7 @@ if (document.getElementById('admin-dashboard-section')) {
         time: modalTime.value,
         message: modalMessage.value
       };
-      const res = await fetch(`${window.API_BASE_URL}/api/admin/bookings/${id}`, {
+      const res = await fetch(`${window.KingTaperConfig.apiBaseUrl}/api/admin/bookings/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -485,7 +529,7 @@ if (document.getElementById('admin-dashboard-section')) {
       btn.addEventListener('click', async function() {
         if (confirm('Are you sure you want to delete this booking?')) {
           const id = btn.getAttribute('data-id');
-          const res = await fetch(`${window.API_BASE_URL}/api/admin/bookings/${id}`, {
+          const res = await fetch(`${window.KingTaperConfig.apiBaseUrl}/api/admin/bookings/${id}`, {
             method: 'DELETE',
             credentials: 'include'
           });
