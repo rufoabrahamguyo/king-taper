@@ -394,9 +394,19 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({ success: false, error: 'Route not found' });
+// 404 handler - only for API routes, not static files
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ success: false, error: 'API route not found' });
+});
+
+// Serve admin.html for admin route
+app.get('/admin', (req, res) => {
+  res.sendFile('admin.html', { root: '.' });
+});
+
+// Serve index.html for root route
+app.get('/', (req, res) => {
+  res.sendFile('index.html', { root: '.' });
 });
 
 // Start server
