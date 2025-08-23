@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Booking</title>
+    <script src="new.js"></script>
+</head>
+<body>
+    <h1>Test Booking Form</h1>
+    <form id="testForm">
+        <input type="text" name="firstName" value="Test" required>
+        <input type="text" name="lastName" value="User" required>
+        <input type="email" name="email" value="test@example.com" required>
+        <input type="tel" name="phone" value="1234567890" required>
+        <input type="hidden" name="selectedService" value="Hair Cut">
+        <input type="hidden" name="selectedPrice" value="500">
+        <input type="date" name="date" value="2025-01-21" required>
+        <input type="time" name="time" value="11:00" required>
+        <textarea name="message">Test message</textarea>
+        <button type="submit">Test Submit</button>
+    </form>
+    
+    <div id="result"></div>
+    
+    <script>
+        document.getElementById('testForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const bookingData = {
+                name: formData.get('firstName') + ' ' + formData.get('lastName'),
+                email: formData.get('email'),
+                phone: formData.get('phone'),
+                service: formData.get('selectedService'),
+                price: formData.get('selectedPrice'),
+                date: formData.get('date'),
+                time: formData.get('time'),
+                message: formData.get('message')
+            };
+            
+            console.log('Test booking data:', bookingData);
+            console.log('KingTaperConfig:', window.KingTaperConfig);
+            
+            // Test API call
+            const API_URL = window.KingTaperConfig ? window.KingTaperConfig.apiBaseUrl + '/api/book' : 'http://localhost:3001/api/book';
+            console.log('API URL:', API_URL);
+            
+            fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(bookingData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Response:', data);
+                document.getElementById('result').textContent = JSON.stringify(data, null, 2);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('result').textContent = 'Error: ' + error.message;
+            });
+        });
+    </script>
+</body>
+</html>

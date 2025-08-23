@@ -1,0 +1,46 @@
+[Unit]
+Description=King Taper Production Server
+Documentation=https://kingtaper.com
+After=network.target mysql.service
+Wants=mysql.service
+
+[Service]
+Type=forking
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/kingtaper
+Environment=NODE_ENV=production
+Environment=PATH=/usr/bin:/usr/local/bin
+ExecStart=/usr/bin/pm2 start server.production.js --name king-taper --env production
+ExecReload=/usr/bin/pm2 reload king-taper
+ExecStop=/usr/bin/pm2 stop king-taper
+ExecStopPost=/usr/bin/pm2 delete king-taper
+PIDFile=/var/run/king-taper.pid
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=king-taper
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/kingtaper/logs /var/www/kingtaper/uploads
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target
+
+# Dependencies
+Requires=mysql.service
+After=mysql.service

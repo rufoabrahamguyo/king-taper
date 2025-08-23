@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="new.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <script src="new.js"></script>
     <style>
         .booking-hero {
             background: linear-gradient(120deg, var(--primary) 60%, var(--secondary) 100%);
@@ -236,8 +237,8 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email">
+                    <label for="email">Email Address *</label>
+                    <input type="email" id="email" name="email" required>
                 </div>
                 <div class="form-group">
                     <label for="phone">Phone Number *</label>
@@ -320,6 +321,7 @@
             <div id="booking-error" style="display:none;color:#ff6b6b;text-align:center;margin-bottom:1rem;font-weight:bold;"></div>
 
             <button type="submit" class="submit-btn" id="submitBtn">Book Appointment</button>
+            <button type="button" onclick="testForm()" style="margin-top: 1rem; padding: 0.5rem 1rem; background: #666; color: white; border: none; border-radius: 5px; cursor: pointer;">Test Form</button>
         </form>
 
         <div class="success-message" id="successMessage">
@@ -376,6 +378,7 @@
           const selectedPriceInput = document.getElementById('selectedPrice');
           const dateInput = document.getElementById('date');
           const timeSelect = document.getElementById('time');
+          const submitBtn = document.getElementById('submitBtn');
 
           // PERFORMANCE IMPROVEMENT: Simple cache for booked times
           const bookedTimesCache = new Map();
@@ -383,10 +386,12 @@
 
           serviceOptions.forEach(option => {
             option.addEventListener('click', function () {
+              console.log('Service selected:', this.dataset.service, 'Price:', this.dataset.price);
               serviceOptions.forEach(opt => opt.classList.remove('selected'));
               this.classList.add('selected');
               selectedServiceInput.value = this.dataset.service;
               selectedPriceInput.value = this.dataset.price;
+              console.log('Hidden inputs updated:', selectedServiceInput.value, selectedPriceInput.value);
             });
           });
 
@@ -414,7 +419,8 @@
               timeSelect.classList.remove('time-select-loading');
             }, 10000); // 10 second timeout
             
-            fetch(`/api/booked-times?date=${encodeURIComponent(date)}`)
+            const apiUrl = window.KingTaperConfig ? window.KingTaperConfig.apiBaseUrl : 'http://localhost:3001';
+            fetch(`${apiUrl}/api/booked-times?date=${encodeURIComponent(date)}`)
               .then(res => res.json())
               .then(data => {
                 clearTimeout(timeoutId); // Clear timeout on success
@@ -525,9 +531,11 @@
           });
         
           // Booking form submission
+          console.log('Setting up form submission handler...');
           document.getElementById('bookingForm').addEventListener('submit', function (e) {
+            console.log('Form submission triggered!');
             e.preventDefault();
-        
+            
             // Check if time slots are fully booked
             if (timeSelect.disabled) {
               document.getElementById('booking-error').textContent = 'Sorry, all time slots for this date are fully booked. Please select another date.';
@@ -536,6 +544,33 @@
             }
         
             const formData = new FormData(this);
+            
+            // Debug: Log all form data
+            console.log('Form data entries:');
+            for (let [key, value] of formData.entries()) {
+              console.log(`${key}: ${value}`);
+            }
+            
+            // Validate required fields
+            const firstName = formData.get('firstName');
+            const lastName = formData.get('lastName');
+            const email = formData.get('email');
+            const phone = formData.get('phone');
+            const service = formData.get('selectedService');
+            const date = formData.get('date');
+            const time = formData.get('time');
+            
+            if (!firstName || !lastName || !email || !phone || !service || !date || !time) {
+              document.getElementById('booking-error').textContent = 'Please fill in all required fields.';
+              document.getElementById('booking-error').style.display = 'block';
+              return;
+            }
+            
+            // Show loading state
+            submitBtn.textContent = 'Booking...';
+            submitBtn.disabled = true;
+            document.getElementById('booking-error').style.display = 'none';
+            
             const bookingData = {
               name: formData.get('firstName') + ' ' + formData.get('lastName'),
               email: formData.get('email'),
@@ -548,8 +583,21 @@
             };
         
             console.log('Submitting booking to backend:', bookingData);
-            // Use the dynamic configuration
-            const API_URL = window.KingTaperConfig.apiBaseUrl + '/api/book';
+            
+            // Check if KingTaperConfig is available
+            let API_URL;
+            if (!window.KingTaperConfig || !window.KingTaperConfig.apiBaseUrl) {
+              console.error('KingTaperConfig not found, using fallback URL');
+              // Use fallback URL based on current hostname
+              if (window.location.hostname === 'localhost') {
+                API_URL = 'http://localhost:3001/api/book';
+              } else {
+                API_URL = '/api/book';
+              }
+            } else {
+              // Use the dynamic configuration
+              API_URL = window.KingTaperConfig.apiBaseUrl + '/api/book';
+            }
             console.log('Server URL:', API_URL);
         
             const message = `New Booking Request:\n
@@ -623,6 +671,25 @@
             });
           });
         });
+        
+        // Test function to debug form
+        function testForm() {
+          console.log('Test function called');
+          console.log('Form element:', document.getElementById('bookingForm'));
+          console.log('Service input:', document.getElementById('selectedService'));
+          console.log('Price input:', document.getElementById('selectedPrice'));
+          console.log('Date input:', document.getElementById('date'));
+          console.log('Time input:', document.getElementById('time'));
+          console.log('KingTaperConfig:', window.KingTaperConfig);
+          
+          // Test form data
+          const form = document.getElementById('bookingForm');
+          const formData = new FormData(form);
+          console.log('Form data entries:');
+          for (let [key, value] of formData.entries()) {
+            console.log(`${key}: ${value}`);
+          }
+        }
         </script>
         
         
