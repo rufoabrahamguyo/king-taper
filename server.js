@@ -19,6 +19,9 @@ const app = express();
 // 2) Trust proxy (for Railway/Netlify cookies)
 app.set('trust proxy', 1);
 
+const PORT = process.env.PORT || 3001;
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
 // Production security headers
 if (NODE_ENV === 'production') {
   app.use((req, res, next) => {
@@ -30,9 +33,6 @@ if (NODE_ENV === 'production') {
     next();
   });
 }
-
-const PORT = process.env.PORT || 3001;
-const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // 3) Middleware
 app.use(cors({
