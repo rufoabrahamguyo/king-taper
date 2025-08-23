@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duration System Test - King Taper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .service-option {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            background: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .service-option:hover {
+            background: #0056b3;
+        }
+        .service-option.selected {
+            background: #28a745;
+        }
+        .time-slot {
+            display: inline-block;
+            padding: 8px 12px;
+            margin: 3px;
+            background: #e9ecef;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .time-slot.available {
+            background: #d4edda;
+            color: #155724;
+        }
+        .time-slot.booked {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .time-slot.blocked {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .duration-info {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            border-left: 4px solid #007bff;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        input, select {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .log {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Duration-Aware Time Slot System Test</h1>
+    
+    <div class="test-section">
+        <h2>📅 Select Date</h2>
+        <input type="date" id="testDate" min="">
+    </div>
+
+    <div class="test-section">
+        <h2>✂️ Select Service</h2>
+        <div class="service-option" data-service="Hair Cut" data-duration="30">Hair Cut (30 min)</div>
+        <div class="service-option" data-service="Kids Cut" data-duration="30">Kids Cut (30 min)</div>
+        <div class="service-option" data-service="Coils & Haircut" data-duration="30">Coils & Haircut (30 min)</div>
+        <div class="service-option" data-service="Barrel Twist" data-duration="120">Barrel Twist (2 hours)</div>
+        <div class="service-option" data-service="Twist" data-duration="120">Twist (2 hours)</div>
+        <div class="service-option" data-service="Hair Color" data-duration="60">Hair Color (1 hour)</div>
+    </div>
+
+    <div class="test-section">
+        <h2>⏰ Available Time Slots</h2>
+        <div id="timeSlots"></div>
+        <div class="duration-info">
+            <strong>Service Duration:</strong> <span id="durationDisplay">Select a service</span><br>
+            <strong>Available Slots:</strong> <span id="slotCount">0</span> slots
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 Test Functions</h2>
+        <button onclick="testServiceDuration()">Test Service Duration API</button>
+        <button onclick="testBookedTimes()">Test Booked Times API</button>
+        <button onclick="testAvailableTimes()">Test Available Times API</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📝 Log</h2>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        // Set minimum date to today
+        document.getElementById('testDate').min = new Date().toISOString().split('T')[0];
+        
+        // Service durations
+        const SERVICE_DURATIONS = {
+            'Hair Cut': 30,
+            'Kids Cut': 30,
+            'Coils & Haircut': 30,
+            'Barrel Twist': 120,
+            'Twist': 120,
+            'Hair Color': 60
+        };
+
+        let selectedService = null;
+        let selectedDate = null;
+
+        // Log function
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // Service selection
+        document.querySelectorAll('.service-option').forEach(option => {
+            option.addEventListener('click', function() {
+                // Remove selection from all options
+                document.querySelectorAll('.service-option').forEach(opt => opt.classList.remove('selected'));
+                
+                // Add selection to clicked option
+                this.classList.add('selected');
+                
+                selectedService = this.dataset.service;
+                const duration = this.dataset.duration;
+                
+                log(`Service selected: ${selectedService} (${duration} minutes)`);
+                
+                // Update duration display
+                document.getElementById('durationDisplay').textContent = `${duration} minutes`;
+                
+                // Generate time slots if date is selected
+                if (selectedDate) {
+                    generateTimeSlots();
+                }
+            });
+        });
+
+        // Date selection
+        document.getElementById('testDate').addEventListener('change', function() {
+            selectedDate = this.value;
+            log(`Date selected: ${selectedDate}`);
+            
+            if (selectedService) {
+                generateTimeSlots();
+            }
+        });
+
+        // Generate time slots based on service duration
+        function generateTimeSlots() {
+            if (!selectedService || !selectedDate) return;
+            
+            const duration = SERVICE_DURATIONS[selectedService];
+            const slots = [];
+            const startHour = 9; // 9 AM
+            const endHour = 21;  // 9 PM
+            const interval = 30; // 30-minute intervals
+            
+            for (let hour = startHour; hour < endHour; hour++) {
+                for (let minute = 0; minute < 60; minute += interval) {
+                    const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                    
+                    // Check if this slot can accommodate the service duration
+                    const endHour = Math.floor((hour * 60 + minute + duration) / 60);
+                    const endMinute = (hour * 60 + minute + duration) % 60;
+                    
+                    if (endHour < 21 || (endHour === 21 && endMinute === 0)) {
+                        slots.push(timeString);
+                    }
+                }
+            }
+            
+            displayTimeSlots(slots);
+            log(`Generated ${slots.length} time slots for ${selectedService} (${duration} min)`);
+        }
+
+        // Display time slots
+        function displayTimeSlots(slots) {
+            const container = document.getElementById('timeSlots');
+            container.innerHTML = '';
+            
+            slots.forEach(slot => {
+                const slotDiv = document.createElement('div');
+                slotDiv.className = 'time-slot available';
+                slotDiv.textContent = slot;
+                container.appendChild(slotDiv);
+            });
+            
+            document.getElementById('slotCount').textContent = slots.length;
+        }
+
+        // Test API functions
+        async function testServiceDuration() {
+            if (!selectedService) {
+                log('❌ Please select a service first');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:3001/api/service-duration/${encodeURIComponent(selectedService)}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    log(`✅ Service Duration API: ${selectedService} = ${data.duration} minutes`);
+                } else {
+                    log(`❌ Service Duration API failed: ${data.error}`);
+                }
+            } catch (error) {
+                log(`❌ Service Duration API error: ${error.message}`);
+            }
+        }
+
+        async function testBookedTimes() {
+            if (!selectedDate) {
+                log('❌ Please select a date first');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:3001/api/booked-times?date=${selectedDate}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    log(`✅ Booked Times API: ${data.times.length} blocked slots for ${selectedDate}`);
+                    if (data.times.length > 0) {
+                        log(`   Blocked times: ${data.times.join(', ')}`);
+                    }
+                } else {
+                    log(`❌ Booked Times API failed: ${data.error}`);
+                }
+            } catch (error) {
+                log(`❌ Booked Times API error: ${error.message}`);
+            }
+        }
+
+        async function testAvailableTimes() {
+            if (!selectedService || !selectedDate) {
+                log('❌ Please select both service and date first');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`http://localhost:3001/api/available-times?date=${selectedDate}&service=${encodeURIComponent(selectedService)}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    log(`✅ Available Times API: ${data.times.length} available slots for ${selectedService} on ${selectedDate}`);
+                    if (data.times.length > 0) {
+                        log(`   Available times: ${data.times.join(', ')}`);
+                    }
+                } else {
+                    log(`❌ Available Times API failed: ${data.error}`);
+                }
+            } catch (error) {
+                log(`❌ Available Times API error: ${error.message}`);
+            }
+        }
+
+        // Initial log
+        log('🚀 Duration-Aware Time Slot System Test Started');
+        log('📋 Instructions:');
+        log('   1. Select a date');
+        log('   2. Select a service');
+        log('   3. View generated time slots');
+        log('   4. Test API endpoints');
+    </script>
+</body>
+</html>

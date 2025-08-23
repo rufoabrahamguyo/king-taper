@@ -136,12 +136,95 @@ db.getConnection((err, connection) => {
   }
 });
 
-// Business hours - 40-minute intervals
-const ALL_TIME_SLOTS = [
-  "09:00", "09:40", "10:20", "11:00", "11:40", "12:20",
-  "13:00", "13:40", "14:20", "15:00", "15:40", "16:20",
-  "17:00", "17:40", "18:20", "19:00", "19:40", "20:20", "21:00"
-];
+// Service durations in minutes
+const SERVICE_DURATIONS = {
+  'Hair Cut': 30,
+  'Kids Cut': 30,
+  'Coils & Haircut': 30,
+  'Barrel Twist': 120, // 2 hours
+  'Twist': 120,        // 2 hours
+  'Hair Color': 60     // 1 hour
+};
+
+// Business hours - 30-minute intervals for maximum flexibility
+const BUSINESS_HOURS = {
+  start: '09:00',
+  end: '21:00',
+  interval: 30 // minutes
+};
+
+// Generate all possible time slots
+function generateTimeSlots() {
+  const slots = [];
+  const startHour = parseInt(BUSINESS_HOURS.start.split(':')[0]);
+  const startMinute = parseInt(BUSINESS_HOURS.start.split(':')[1]);
+  const endHour = parseInt(BUSINESS_HOURS.end.split(':')[0]);
+  const endMinute = parseInt(BUSINESS_HOURS.end.split(':')[1]);
+  
+  let currentHour = startHour;
+  let currentMinute = startMinute;
+  
+  while (currentHour < endHour || (currentHour === endHour && currentMinute < endMinute)) {
+    const timeString = `${currentHour.toString().padStart(2, '0')}:${currentMinute.toString().padStart(2, '0')}`;
+    slots.push(timeString);
+    
+    currentMinute += BUSINESS_HOURS.interval;
+    if (currentMinute >= 60) {
+      currentMinute = 0;
+      currentHour++;
+    }
+  }
+  
+  return slots;
+}
+
+const ALL_TIME_SLOTS = generateTimeSlots();
+
+// Helper function to add minutes to a time string
+function addMinutesToTime(timeString, minutes) {
+  const [hours, mins] = timeString.split(':').map(Number);
+  const totalMinutes = hours * 60 + mins + minutes;
+  const newHours = Math.floor(totalMinutes / 60);
+  const newMins = totalMinutes % 60;
+  return `${newHours.toString().padStart(2, '0')}:${newMins.toString().padStart(2, '0')}`;
+}
+
+// Helper function to check if a time slot conflicts with existing bookings
+function checkTimeSlotConflict(date, startTime, service, db) {
+  return new Promise(async (resolve) => {
+    try {
+      const duration = SERVICE_DURATIONS[service] || 30;
+      const endTime = addMinutesToTime(startTime, duration);
+      
+      // Get all bookings for the date
+      const [bookings] = await db.promise().query(
+        'SELECT time, service FROM bookings WHERE date = ?',
+        [date]
+      );
+      
+      // Check for conflicts
+      for (const booking of bookings) {
+        const bookingStart = booking.time;
+        const bookingService = booking.service;
+        const bookingDuration = SERVICE_DURATIONS[bookingService] || 30;
+        const bookingEnd = addMinutesToTime(bookingStart, bookingDuration);
+        
+        // Check if times overlap
+        if (
+          (startTime < bookingEnd && endTime > bookingStart) ||
+          (bookingStart < endTime && bookingEnd > startTime)
+        ) {
+          resolve(true); // Conflict found
+        }
+      }
+      
+      resolve(false); // No conflict
+    } catch (error) {
+      console.error('Error checking time slot conflict:', error);
+      resolve(true); // Assume conflict on error for safety
+    }
+  });
+}
 
 // Ensure database constraints (only if database is connected)
 if (db) {
@@ -181,43 +264,40 @@ if (db) {
 }
 
 // API Routes
-// Booking creation
+// Booking creation - UPDATED with duration-aware logic
 app.post('/api/book', async (req, res) => {
-  if (!db) {
-    return res.status(503).json({ success: false, error: 'Database not available' });
-  }
-
   const { name, email, phone, service, price, date, time, message } = req.body;
-  
   if (!name || !phone || !service || !price || !date || !time) {
     return res.status(400).json({ success: false, error: 'Missing required fields' });
   }
 
   try {
-    // Check if time slot is available
-    const [checkResults] = await db.promise().query(
-      'SELECT COUNT(*) AS count FROM bookings WHERE date=? AND time=?', 
-      [date, time]
-    );
-    
-    if (checkResults[0].count > 0) {
-      return res.status(409).json({ success: false, error: 'Time slot already booked' });
+    // Check if time slot conflicts with existing bookings
+    const hasConflict = await checkTimeSlotConflict(date, time, service, db);
+    if (hasConflict) {
+      return res.status(409).json({ 
+        success: false, 
+        error: 'Time slot conflicts with existing booking. Please choose another time.' 
+      });
     }
 
-    // Create booking
+    // Create booking in database
     const [insertResult] = await db.promise().query(
       `INSERT INTO bookings (name,email,phone,service,price,date,time,message) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [name, email, phone, service, price, date, time, message]
     );
 
+    const bookingId = insertResult.insertId;
+    const booking = { name, email, phone, service, price, date, time, message };
+
     res.status(201).json({ 
       success: true, 
-      bookingId: insertResult.insertId 
+      bookingId: bookingId
     });
 
   } catch (error) {
     console.error('❌ Error creating booking:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -319,52 +399,91 @@ app.delete('/api/admin/bookings/:id', async (req, res) => {
   }
 });
 
-// Available times
+// Available times - UPDATED with duration-aware logic
 app.get('/api/available-times', async (req, res) => {
-  if (!db) {
-    return res.status(503).json({ success: false, error: 'Database not available' });
-  }
-
-  const { date } = req.query;
+  const { date, service } = req.query;
   if (!date) return res.status(400).json({ success: false, error: 'Missing date parameter' });
+  if (!service) return res.status(400).json({ success: false, error: 'Missing service parameter' });
 
   try {
+    // Get all bookings for the date
     const [bookings] = await db.promise().query(
-      'SELECT time FROM bookings WHERE date = ?',
+      'SELECT time, service FROM bookings WHERE date = ?',
       [date]
     );
-
-    const unavailable = bookings.map(r => r.time.toString().slice(0, 5));
-    const available = ALL_TIME_SLOTS.filter(t => !unavailable.includes(t));
     
-    res.json({ success: true, times: available });
+    // Filter out conflicting time slots
+    const availableSlots = ALL_TIME_SLOTS.filter(slot => {
+      // Check if this slot conflicts with any existing booking
+      for (const booking of bookings) {
+        const bookingStart = booking.time;
+        const bookingService = booking.service;
+        const bookingDuration = SERVICE_DURATIONS[bookingService] || 30;
+        const bookingEnd = addMinutesToTime(bookingStart, bookingDuration);
+        
+        const requestedDuration = SERVICE_DURATIONS[service] || 30;
+        const requestedEnd = addMinutesToTime(slot, requestedDuration);
+        
+        // Check for overlap
+        if (slot < bookingEnd && requestedEnd > bookingStart) {
+          return false; // Slot conflicts
+        }
+      }
+      return true; // Slot is available
+    });
+    
+    console.log(`📅 Date: ${date}, Service: ${service}, Available times:`, availableSlots);
+    res.json({ success: true, times: availableSlots });
+
   } catch (error) {
     console.error('❌ Error fetching available times:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// Booked times
+// Booked times - UPDATED with duration-aware logic
 app.get('/api/booked-times', async (req, res) => {
-  if (!db) {
-    return res.status(503).json({ success: false, error: 'Database not available' });
-  }
-
   const { date } = req.query;
   if (!date) return res.status(400).json({ success: false, error: 'Missing date parameter' });
 
   try {
+    // Get all bookings for the date with their durations
     const [bookings] = await db.promise().query(
-      'SELECT time FROM bookings WHERE date = ?',
+      'SELECT time, service FROM bookings WHERE date = ?',
       [date]
     );
     
-    const unavailableTimes = bookings.map(r => r.time.toString().slice(0, 5));
-    res.json({ success: true, times: unavailableTimes });
+    // Generate all blocked time slots based on service durations
+    const blockedSlots = new Set();
+    
+    for (const booking of bookings) {
+      const startTime = booking.time;
+      const service = booking.service;
+      const duration = SERVICE_DURATIONS[service] || 30;
+      
+      // Add all time slots that are blocked by this booking
+      let currentTime = startTime;
+      for (let i = 0; i < duration; i += BUSINESS_HOURS.interval) {
+        blockedSlots.add(currentTime);
+        currentTime = addMinutesToTime(currentTime, BUSINESS_HOURS.interval);
+      }
+    }
+    
+    const blockedTimes = Array.from(blockedSlots).sort();
+    
+    console.log(`📅 Date: ${date}, Blocked times:`, blockedTimes);
+    res.json({ success: true, times: blockedTimes });
   } catch (error) {
     console.error('❌ Error fetching booked times:', error);
-    res.status(500).json({ success: false, error: 'Internal server error' });
+    res.status(500).json({ success: false, error: error.message });
   }
+});
+
+// New endpoint to get service duration
+app.get('/api/service-duration/:service', (req, res) => {
+  const { service } = req.params;
+  const duration = SERVICE_DURATIONS[service] || 30;
+  res.json({ success: true, service, duration });
 });
 
 // Health check endpoint

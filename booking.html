@@ -381,80 +381,62 @@
 
           // PERFORMANCE IMPROVEMENT: Simple cache for booked times
           const bookedTimesCache = new Map();
-          const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+          const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
 
-          serviceOptions.forEach(option => {
-            option.addEventListener('click', function () {
-              console.log('Service selected:', this.dataset.service, 'Price:', this.dataset.price);
-              serviceOptions.forEach(opt => opt.classList.remove('selected'));
-              this.classList.add('selected');
-              selectedServiceInput.value = this.dataset.service;
-              selectedPriceInput.value = this.dataset.price;
-              console.log('Hidden inputs updated:', selectedServiceInput.value, selectedPriceInput.value);
-            });
-          });
-
-          // Highlight booked times in red - OPTIMIZED VERSION
-          function highlightBookedTimes(date) {
-            if (!date) return;
-            console.log('Fetching booked times for date:', date);
-            
-            // Check cache first
-            const cached = bookedTimesCache.get(date);
-            if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
-              console.log('Using cached data for:', date);
-              updateTimeSelect(cached.times);
-              return;
-            }
-            
-            // Show loading state
-            timeSelect.classList.add('time-select-loading');
-            timeSelect.innerHTML = '<option value="">Loading available times...</option>';
-            
-            // PERFORMANCE IMPROVEMENT: Add timeout to prevent indefinite loading
-            const timeoutId = setTimeout(() => {
-              console.warn('API call timeout for date:', date);
-              timeSelect.innerHTML = '<option value="">Loading timeout - please try again</option>';
-              timeSelect.classList.remove('time-select-loading');
-            }, 10000); // 10 second timeout
-            
-            const apiUrl = window.KingTaperConfig ? window.KingTaperConfig.apiBaseUrl : 'http://localhost:3001';
-            fetch(`${apiUrl}/api/booked-times?date=${encodeURIComponent(date)}`)
-              .then(res => res.json())
-              .then(data => {
-                clearTimeout(timeoutId); // Clear timeout on success
-                console.log('Booked times response:', data);
-                if (!data.success) return;
-                
-                // Cache the result
-                bookedTimesCache.set(date, {
-                  times: data.times,
-                  timestamp: Date.now()
-                });
-                
-                updateTimeSelect(data.times);
-              })
-              .catch(error => {
-                clearTimeout(timeoutId); // Clear timeout on error
-                console.error('Error fetching booked times:', error);
-                // Fallback to showing all times if API fails
-                updateTimeSelect([]);
-              });
+          // Helper function to get service duration
+          function getServiceDuration(service) {
+            const durations = {
+              'Hair Cut': 30,
+              'Kids Cut': 30,
+              'Coils & Haircut': 30,
+              'Barrel Twist': 120, // 2 hours
+              'Twist': 120,        // 2 hours
+              'Hair Color': 60     // 1 hour
+            };
+            return durations[service] || 30;
           }
 
-          // Helper function to update time select
-          function updateTimeSelect(bookedTimes) {
+          // Helper function to generate time slots based on service duration
+          function generateTimeSlotsForService(duration) {
+            const slots = [];
+            const startHour = 9; // 9 AM
+            const endHour = 21;  // 9 PM
+            const interval = 30; // 30-minute intervals
+            
+            for (let hour = startHour; hour < endHour; hour++) {
+              for (let minute = 0; minute < 60; minute += interval) {
+                const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                
+                // Check if this slot can accommodate the service duration
+                const endHour = Math.floor((hour * 60 + minute + duration) / 60);
+                const endMinute = (hour * 60 + minute + duration) % 60;
+                
+                if (endHour < 21 || (endHour === 21 && endMinute === 0)) {
+                  slots.push(timeString);
+                }
+              }
+            }
+            
+            return slots;
+          }
+
+          // Update the time slot generation to be dynamic based on service duration
+          function updateTimeSelect(bookedTimes, selectedService) {
             const booked = new Set(bookedTimes);
             console.log('Booked times:', Array.from(booked));
-            const allTimes = [
-              "09:00","09:40","10:20","11:00","11:40","12:20","13:00","13:40","14:20","15:00","15:40","16:20","17:00","17:40","18:20","19:00","19:40","20:20","21:00"
-            ];
+            
+            // Get service duration
+            const serviceDuration = getServiceDuration(selectedService);
+            console.log('Service duration for', selectedService, ':', serviceDuration, 'minutes');
+            
+            // Generate time slots based on service duration
+            const timeSlots = generateTimeSlotsForService(serviceDuration);
             
             // Clear the time select
             timeSelect.innerHTML = '';
             
             // Check if all slots are booked
-            const availableTimes = allTimes.filter(time => !booked.has(time));
+            const availableTimes = timeSlots.filter(time => !booked.has(time));
             
             if (availableTimes.length === 0) {
               // All slots are booked
@@ -491,11 +473,96 @@
             const timeStatus = document.getElementById('time-status');
             if (timeStatus) timeStatus.style.display = 'none';
           }
-          dateInput.addEventListener('change', function() {
-            highlightBookedTimes(this.value);
+
+          // Update the highlightBookedTimes function to include service parameter
+          function highlightBookedTimes(date, service) {
+            if (!date) return;
+            
+            console.log('Fetching booked times for date:', date, 'and service:', service);
+            
+            // Check cache first
+            const cacheKey = `${date}-${service}`;
+            const cached = bookedTimesCache.get(cacheKey);
+            if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+              console.log('Using cached data for:', cacheKey);
+              updateTimeSelect(cached.times, service);
+              return;
+            }
+            
+            // Show loading state
+            timeSelect.classList.add('time-select-loading');
+            timeSelect.innerHTML = '<option value="">Loading available times...</option>';
+            
+            // PERFORMANCE IMPROVEMENT: Add timeout to prevent indefinite loading
+            const timeoutId = setTimeout(() => {
+              console.warn('API call timeout for date:', date);
+              timeSelect.innerHTML = '<option value="">Loading timeout - please try again</option>';
+              timeSelect.classList.remove('time-select-loading');
+            }, 10000); // 10 second timeout
+            
+            const apiUrl = window.KingTaperConfig ? window.KingTaperConfig.apiBaseUrl : 'http://localhost:3001';
+            fetch(`${apiUrl}/api/booked-times?date=${encodeURIComponent(date)}`)
+              .then(res => res.json())
+              .then(data => {
+                clearTimeout(timeoutId); // Clear timeout on success
+                console.log('Booked times response:', data);
+                if (!data.success) return;
+                
+                // Cache the result
+                bookedTimesCache.set(cacheKey, {
+                  times: data.times,
+                  timestamp: Date.now()
+                });
+                
+                updateTimeSelect(data.times, service);
+              })
+              .catch(error => {
+                clearTimeout(timeoutId); // Clear timeout on error
+                console.error('Error fetching booked times:', error);
+                // Fallback to showing all times if API fails
+                updateTimeSelect([], service);
+              });
+          }
+
+          // Update service selection to refresh time slots
+          serviceOptions.forEach(option => {
+            option.addEventListener('click', function() {
+              console.log('Service selected:', this.dataset.service, 'Price:', this.dataset.price);
+              
+              // Remove selection from all options
+              serviceOptions.forEach(opt => opt.classList.remove('selected'));
+              
+              // Add selection to clicked option
+              this.classList.add('selected');
+              
+              // Update hidden inputs
+              selectedServiceInput.value = this.dataset.service;
+              selectedPriceInput.value = this.dataset.price;
+              
+              console.log('Hidden inputs updated:', selectedServiceInput.value, selectedPriceInput.value);
+              
+              // Refresh time slots based on new service selection
+              if (dateInput.value) {
+                highlightBookedTimes(dateInput.value, this.dataset.service);
+              }
+            });
           });
+
+          // Update date change handler to include service
+          dateInput.addEventListener('change', function() {
+            const selectedService = selectedServiceInput.value;
+            if (selectedService) {
+              highlightBookedTimes(this.value, selectedService);
+            }
+          });
+
           // Initial highlight if date is pre-filled
-          if (dateInput.value) highlightBookedTimes(dateInput.value);
+          if (dateInput.value) {
+            const selectedService = selectedServiceInput.value;
+            if (selectedService) {
+              highlightBookedTimes(dateInput.value, selectedService);
+            }
+          }
           
           // Auto-refresh available times every 2 minutes to catch real-time updates
           let autoRefreshInterval;
@@ -507,7 +574,10 @@
               if (dateInput.value && !timeSelect.disabled) {
                 console.log('Auto-refreshing available time slots...');
                 timeStatus.style.display = 'block';
-                highlightBookedTimes(dateInput.value);
+                const selectedService = selectedServiceInput.value;
+                if (selectedService) {
+                  highlightBookedTimes(dateInput.value, selectedService);
+                }
               }
             }, 120000); // 2 minutes
           }
@@ -634,7 +704,10 @@
                 const bookedDate = bookingData.date;
                 if (bookedDate) {
                   console.log('Refreshing available time slots for:', bookedDate);
-                  highlightBookedTimes(bookedDate);
+                  const selectedService = bookingData.service;
+                  if (selectedService) {
+                    highlightBookedTimes(bookedDate, selectedService);
+                  }
                 }
                 
                 // Reset form and selection styles
