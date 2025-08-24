@@ -494,7 +494,8 @@
           // Update the time slot generation to be dynamic based on service duration
           function updateTimeSelect(bookedTimes, selectedService) {
             const booked = new Set(bookedTimes);
-            console.log('Booked times:', Array.from(booked));
+            console.log('Booked times received:', Array.from(booked));
+            console.log('Booked times type:', typeof bookedTimes, 'Length:', bookedTimes.length);
             
             // Get service duration
             const serviceDuration = getServiceDuration(selectedService);
@@ -510,6 +511,7 @@
             // Check if all slots are booked
             const availableTimes = timeSlots.filter(time => !booked.has(time));
             console.log(`Total slots: ${timeSlots.length}, Booked: ${booked.size}, Available: ${availableTimes.length}`);
+            console.log('Available times:', availableTimes);
             
             if (availableTimes.length === 0) {
               // All slots are booked
@@ -724,6 +726,16 @@
           // Initial state - disable time selection until service is chosen
           resetTimeSelection();
           
+          // Test if the submit button is working
+          if (submitBtn) {
+            submitBtn.addEventListener('click', function() {
+              console.log('Submit button clicked!');
+            });
+            console.log('✅ Submit button event listener added');
+          } else {
+            console.error('❌ Submit button not found!');
+          }
+          
                       // Log system status
             console.log('🚀 King Taper Booking System Initialized');
             console.log('📅 Service Durations:', {
@@ -806,16 +818,14 @@
             startAutoRefresh();
           });
           
-          // Stop auto-refresh when form is submitted
-          document.getElementById('bookingForm').addEventListener('submit', function() {
-            stopAutoRefresh();
-          });
-        
           // Booking form submission
           console.log('Setting up form submission handler...');
           document.getElementById('bookingForm').addEventListener('submit', function (e) {
             console.log('Form submission triggered!');
             e.preventDefault();
+            
+            // Stop auto-refresh when form is submitted
+            stopAutoRefresh();
             
             // Check if time slots are fully booked
             if (timeSelect.disabled || timeSelect.classList.contains('fully-booked')) {
@@ -824,6 +834,8 @@
               return;
             }
             
+            const formData = new FormData(this);
+            
             // Double-check that the selected time is still available
             const selectedTime = formData.get('time');
             if (!selectedTime || selectedTime === '') {
@@ -831,8 +843,6 @@
               document.getElementById('booking-error').style.display = 'block';
               return;
             }
-        
-            const formData = new FormData(this);
             
             // Debug: Log all form data
             console.log('Form data entries:');

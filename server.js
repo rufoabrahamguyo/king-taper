@@ -435,8 +435,11 @@ app.get('/api/booked-times', async (req, res) => {
       const duration = SERVICE_DURATIONS[service] || 30;
       
       // Add all time slots that are blocked by this booking
+      // For 90-minute services, block the full duration
       let currentTime = startTime;
-      for (let i = 0; i < duration; i += BUSINESS_HOURS.interval) {
+      const endTime = addMinutesToTime(startTime, duration);
+      
+      while (currentTime < endTime) {
         blockedSlots.add(currentTime);
         currentTime = addMinutesToTime(currentTime, BUSINESS_HOURS.interval);
       }
@@ -444,8 +447,16 @@ app.get('/api/booked-times', async (req, res) => {
     
     const blockedTimes = Array.from(blockedSlots).sort();
     
-    console.log(`📅 Date: ${date}, Blocked times:`, blockedTimes);
-    res.json({ success: true, times: blockedTimes });
+    // Convert times to HH:MM format (remove seconds) for frontend compatibility
+    const formattedTimes = blockedTimes.map(time => {
+      if (typeof time === 'string' && time.includes(':')) {
+        return time.split(':').slice(0, 2).join(':');
+      }
+      return time;
+    });
+    
+    console.log(`📅 Date: ${date}, Blocked times:`, formattedTimes);
+    res.json({ success: true, times: formattedTimes });
   } catch (error) {
     console.error('❌ Error fetching booked times:', error);
     res.status(500).json({ success: false, error: error.message });
