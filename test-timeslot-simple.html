@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timeslot System Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }
+        .test-section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; }
+        .service-option { background: #333; color: white; padding: 15px; margin: 10px; border-radius: 8px; cursor: pointer; display: inline-block; }
+        .service-option.selected { background: #d4af37; color: #333; }
+        .time-slot { background: white; padding: 8px 12px; margin: 5px; border-radius: 4px; display: inline-block; border: 1px solid #ddd; }
+        .time-slot.booked { background: #f8d7da; color: #721c24; }
+        .time-slot.available { background: #d4edda; color: #155724; }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        input { padding: 8px; border: 1px solid #ddd; border-radius: 4px; margin: 5px; }
+        .log { background: #f8f9fa; border: 1px solid #ddd; padding: 15px; border-radius: 8px; max-height: 300px; overflow-y: auto; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Timeslot System Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Service Selection</h2>
+        <div class="service-option" data-service="Hair Cut" data-duration="30">Hair Cut (30 min)</div>
+        <div class="service-option" data-service="Barrel Twist" data-duration="120">Barrel Twist (2 hours)</div>
+        <div class="service-option" data-service="Hair Color" data-duration="60">Hair Color (1 hour)</div>
+        
+        <div id="timeSlots"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Double Booking Test</h2>
+        <input type="date" id="testDate" min="">
+        <button onclick="testDoubleBooking()">Test Double Booking Prevention</button>
+        <button onclick="simulateBookings()">Simulate Bookings</button>
+        <div id="testResults"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. System Log</h2>
+        <button onclick="clearLog()">Clear Log</button>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        document.getElementById('testDate').min = new Date().toISOString().split('T')[0];
+        
+        const serviceDurations = {
+            'Hair Cut': 30,
+            'Barrel Twist': 120,
+            'Hair Color': 60
+        };
+        
+        let selectedService = null;
+        let simulatedBookings = [];
+        
+        function generateTimeSlots(duration) {
+            const slots = [];
+            const startHour = 9;
+            const endHour = 21;
+            const workingMinutes = (endHour - startHour) * 60;
+            const maxSlots = Math.floor(workingMinutes / duration);
+            
+            for (let i = 0; i < maxSlots; i++) {
+                const startMinute = startHour * 60 + (i * duration);
+                const hour = Math.floor(startMinute / 60);
+                const minute = startMinute % 60;
+                const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                slots.push(timeString);
+            }
+            return slots;
+        }
+        
+        function checkConflict(date, startTime, service, bookings) {
+            const duration = serviceDurations[service] || 30;
+            const endTime = addMinutes(startTime, duration);
+            
+            for (const booking of bookings) {
+                if (booking.date !== date) continue;
+                
+                const bookingDuration = serviceDurations[booking.service] || 30;
+                const bookingEnd = addMinutes(booking.time, bookingDuration);
+                
+                if ((startTime < bookingEnd && endTime > booking.time) ||
+                    (booking.time < endTime && bookingEnd > startTime)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        function addMinutes(timeString, minutes) {
+            const [hours, mins] = timeString.split(':').map(Number);
+            const totalMinutes = hours * 60 + mins + minutes;
+            const newHours = Math.floor(totalMinutes / 60);
+            const newMins = totalMinutes % 60;
+            return `${newHours.toString().padStart(2, '0')}:${newMins.toString().padStart(2, '0')}`;
+        }
+        
+        function displayTimeSlots(slots, service, date) {
+            const container = document.getElementById('timeSlots');
+            container.innerHTML = '';
+            
+            slots.forEach(slot => {
+                const slotDiv = document.createElement('div');
+                slotDiv.className = 'time-slot';
+                
+                const hasConflict = checkConflict(date, slot, service, simulatedBookings);
+                slotDiv.classList.add(hasConflict ? 'booked' : 'available');
+                slotDiv.textContent = `${slot} - ${hasConflict ? 'Booked' : 'Available'}`;
+                
+                container.appendChild(slotDiv);
+            });
+        }
+        
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('log');
+            const logEntry = document.createElement('div');
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+        
+        document.querySelectorAll('.service-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.service-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                
+                selectedService = this.dataset.service;
+                const duration = parseInt(this.dataset.duration);
+                
+                log(`Service selected: ${selectedService} (${duration} minutes)`, 'success');
+                
+                const timeSlots = generateTimeSlots(duration);
+                const date = document.getElementById('testDate').value || new Date().toISOString().split('T')[0];
+                displayTimeSlots(timeSlots, selectedService, date);
+            });
+        });
+        
+        function testDoubleBooking() {
+            if (!selectedService) {
+                log('Please select a service first', 'error');
+                return;
+            }
+            
+            const date = document.getElementById('testDate').value;
+            if (!date) {
+                log('Please select a date first', 'error');
+                return;
+            }
+            
+            log('Testing double booking prevention...', 'info');
+            
+            const testTimes = ['09:00', '09:30', '10:00', '10:30'];
+            const conflicts = [];
+            
+            for (const time of testTimes) {
+                if (checkConflict(date, time, selectedService, simulatedBookings)) {
+                    conflicts.push(time);
+                }
+            }
+            
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = `
+                <p><strong>Service:</strong> ${selectedService}</p>
+                <p><strong>Date:</strong> ${date}</p>
+                <p><strong>Conflicts Detected:</strong> ${conflicts.length}</p>
+                <p><strong>Conflicting Times:</strong> ${conflicts.join(', ') || 'None'}</p>
+            `;
+            
+            log(`Double booking test completed: ${conflicts.length} conflicts found`, 'success');
+        }
+        
+        function simulateBookings() {
+            const date = document.getElementById('testDate').value || new Date().toISOString().split('T')[0];
+            
+            simulatedBookings = [
+                { date, time: '09:00', service: 'Hair Cut' },
+                { date, time: '10:00', service: 'Barrel Twist' },
+                { date, time: '14:00', service: 'Hair Color' }
+            ];
+            
+            log(`Added ${simulatedBookings.length} simulated bookings`, 'success');
+            
+            if (selectedService) {
+                const timeSlots = generateTimeSlots(serviceDurations[selectedService]);
+                displayTimeSlots(timeSlots, selectedService, date);
+            }
+        }
+        
+        document.getElementById('testDate').addEventListener('change', function() {
+            if (selectedService) {
+                const timeSlots = generateTimeSlots(serviceDurations[selectedService]);
+                displayTimeSlots(timeSlots, selectedService, this.value);
+            }
+        });
+        
+        log('Timeslot system test initialized', 'success');
+    </script>
+</body>
+</html>

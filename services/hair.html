@@ -96,6 +96,38 @@
             margin-bottom: 0.5rem;
         }
 
+        .duration-badge {
+            background: var(--accent);
+            color: var(--primary);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            text-align: center;
+            min-width: 80px;
+            margin-bottom: 1rem;
+            display: inline-block;
+        }
+
+        .service-info {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .service-card:hover .duration-badge {
+            background: var(--gold-dark);
+            color: var(--light);
+            transform: scale(1.05);
+            transition: all 0.3s ease;
+        }
+
+        .duration-badge {
+            transition: all 0.3s ease;
+        }
+
         /* optional: shrink price a bit on very small screens */
         @media (max-width: 400px) {
             .service-price {
@@ -212,9 +244,10 @@
                 <p class="service-description">
                     Professional haircut with precision styling and finishing touches.
                 </p>
-                <!-- Move the price BELOW the description -->
-                <div class="service-price">KSH 500</div>
-                <div class="service-duration">Duration: 30–40 mins</div>
+                <div class="service-info">
+                    <div class="service-price">KSH 500</div>
+                    <div class="duration-badge">30 min</div>
+                </div>
                 <a href="../booking.html" class="book-btn">Book Now</a>
               </div>
             </div>
@@ -228,8 +261,10 @@
                 <p class="service-description">
                     Gentle and fun haircuts specially designed for children.
                 </p>
-                <div class="service-price">KSH 300</div>
-                <div class="service-duration">Duration: 30–40 mins</div>
+                <div class="service-info">
+                    <div class="service-price">KSH 300</div>
+                    <div class="duration-badge">30 min</div>
+                </div>
                 <a href="../booking.html" class="book-btn">Book Now</a>
               </div>
             </div>
@@ -242,8 +277,10 @@
                 <p class="service-description">
                     Specialized coil styling combined with precision haircut.
                 </p>
-                <div class="service-price">KSH 1,500</div>
-                <div class="service-duration">Duration: 30–40 mins</div>
+                <div class="service-info">
+                    <div class="service-price">KSH 1,500</div>
+                    <div class="duration-badge">30 min</div>
+                </div>
                 <a href="../booking.html" class="book-btn">Book Now</a>
               </div>
             </div>
@@ -256,8 +293,10 @@
                 <p class="service-description">
                     Professional barrel twist styling for textured hair.
                 </p>
-                <div class="service-price">KSH 1,000</div>
-                <div class="service-duration">Duration: 30–40 mins</div>
+                <div class="service-info">
+                    <div class="service-price">KSH 1,000</div>
+                    <div class="duration-badge">2 hours</div>
+                </div>
                 <a href="../booking.html" class="book-btn">Book Now</a>
               </div>
             </div>
@@ -270,8 +309,10 @@
                 <p class="service-description">
                     Classic twist styling for natural hair texture.
                 </p>
-                <div class="service-price">KSH 1,000</div>
-                <div class="service-duration">Duration: 30–40 mins</div>
+                <div class="service-info">
+                    <div class="service-price">KSH 1,000</div>
+                    <div class="duration-badge">2 hours</div>
+                </div>
                 <a href="../booking.html" class="book-btn">Book Now</a>
               </div>
             </div>
@@ -284,8 +325,10 @@
                 <p class="service-description">
                     Professional hair coloring and treatment services.
                 </p>
-                <div class="service-price">KSH 500</div>
-                <div class="service-duration">Duration: 30–40 mins</div>
+                <div class="service-info">
+                    <div class="service-price">KSH 500</div>
+                    <div class="duration-badge">1 hour</div>
+                </div>
                 <a href="../booking.html" class="book-btn">Book Now</a>
               </div>
             </div>
@@ -311,10 +354,10 @@
         <div class="footer-col footer-links">
           <h3 class="footer-title-red">Quick Links</h3>
           <ul class="footer-links-list">
-            <li><a href="/about.html">About</a></li>
-            <li><a href="#contact">Contact</a></li>
-            <li><a href="/booking.html">Book</a></li>
-            <li><a href="/services/hair.html">Services</a></li>
+            <li><a href="../about.html">About</a></li>
+            <li><a href="../index.html#contact">Contact</a></li>
+            <li><a href="../booking.html">Book</a></li>
+            <li><a href="hair.html">Services</a></li>
           </ul>
         </div>
       </div>

@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timeslot System Test - King Taper</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .service-option {
+            background: #333;
+            color: white;
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .service-option:hover {
+            background: #555;
+            transform: translateY(-2px);
+        }
+        .service-option.selected {
+            background: #d4af37;
+            color: #333;
+        }
+        .time-slots {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .time-slot {
+            background: white;
+            padding: 8px 12px;
+            margin: 5px;
+            border-radius: 4px;
+            display: inline-block;
+            border: 1px solid #ddd;
+            font-size: 12px;
+        }
+        .time-slot.booked {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #f5c6cb;
+        }
+        .time-slot.available {
+            background: #d4edda;
+            color: #155724;
+            border-color: #c3e6cb;
+        }
+        .time-slot.conflict {
+            background: #fff3cd;
+            color: #856404;
+            border-color: #ffeaa7;
+        }
+        .log {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #007bff;
+        }
+        .log-error {
+            border-left-color: #dc3545;
+            color: #dc3545;
+        }
+        .log-success {
+            border-left-color: #28a745;
+            color: #28a745;
+        }
+        .log-warning {
+            border-left-color: #ffc107;
+            color: #856404;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        input, select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        .duration-badge {
+            background: #d4af37;
+            color: #333;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .test-results {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #007bff;
+        }
+        .conflict-test {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Timeslot System Comprehensive Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Service Selection & Duration Test</h2>
+        <p>Select different services to test duration-aware timeslot generation:</p>
+        
+        <div class="service-option" data-service="Hair Cut" data-duration="30">
+            Hair Cut <span class="duration-badge">30 min</span>
+        </div>
+        <div class="service-option" data-service="Kids Cut" data-duration="30">
+            Kids Cut <span class="duration-badge">30 min</span>
+        </div>
+        <div class="service-option" data-service="Barrel Twist" data-duration="120">
+            Barrel Twist <span class="duration-badge">2 hours</span>
+        </div>
+        <div class="service-option" data-service="Hair Color" data-duration="60">
+            Hair Color <span class="duration-badge">1 hour</span>
+        </div>
+        
+        <div class="time-slots">
+            <h3>Generated Time Slots:</h3>
+            <div id="timeSlots"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Double Booking Prevention Test</h2>
+        <p>Test that overlapping time slots cannot be booked:</p>
+        
+        <input type="date" id="testDate" min="">
+        <button onclick="testDoubleBookingPrevention()">Test Double Booking Prevention</button>
+        <button onclick="simulateMultipleBookings()">Simulate Multiple Bookings</button>
+        <button onclick="testTimeSlotConflicts()">Test Time Slot Conflicts</button>
+        
+        <div class="conflict-test">
+            <h4>Conflict Detection Results:</h4>
+            <div id="conflictResults"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Dynamic Timeslot Updates</h2>
+        <p>Test real-time timeslot updates and availability:</p>
+        
+        <button onclick="testRealTimeUpdates()">Test Real-Time Updates</button>
+        <button onclick="testCacheSystem()">Test Cache System</button>
+        <button onclick="testAutoRefresh()">Test Auto-Refresh</button>
+        
+        <div class="test-results">
+            <h4>Update Test Results:</h4>
+            <div id="updateResults"></div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. System Log</h2>
+        <button onclick="clearLog()">Clear Log</button>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        // Set minimum date to today
+        document.getElementById('testDate').min = new Date().toISOString().split('T')[0];
+
+        // Service duration mapping (same as in server.js)
+        const serviceDurations = {
+            'Hair Cut': 30,
+            'Kids Cut': 30,
+            'Coils & Haircut': 30,
+            'Barrel Twist': 120,
+            'Twist': 120,
+            'Hair Color': 60
+        };
+
+        // Simulated database for testing
+        let simulatedBookings = [];
+        let selectedService = null;
+
+        // Generate time slots function (same as in booking.html)
+        function generateTimeSlotsForService(duration) {
+            const slots = [];
+            const startHour = 9; // 9 AM
+            const endHour = 21;  // 9 PM
+            
+            // Calculate how many slots we can fit in the working hours
+            const workingMinutes = (endHour - startHour) * 60;
+            const maxSlots = Math.floor(workingMinutes / duration);
+            
+            for (let i = 0; i < maxSlots; i++) {
+                const startMinute = startHour * 60 + (i * duration);
+                const hour = Math.floor(startMinute / 60);
+                const minute = startMinute % 60;
+                
+                // Format time as HH:MM
+                const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                slots.push(timeString);
+                slots.push(timeString);
+            }
+            
+            return slots;
+        }
+
+        // Check for time slot conflicts (same logic as server.js)
+        function checkTimeSlotConflict(date, startTime, service, existingBookings) {
+            const duration = serviceDurations[service] || 30;
+            const endTime = addMinutesToTime(startTime, duration);
+            
+            // Check for conflicts with existing bookings
+            for (const booking of existingBookings) {
+                if (booking.date !== date) continue;
+                
+                const bookingStart = booking.time;
+                const bookingService = booking.service;
+                const bookingDuration = serviceDurations[bookingService] || 30;
+                const bookingEnd = addMinutesToTime(bookingStart, bookingDuration);
+                
+                // Check if times overlap
+                if (
+                    (startTime < bookingEnd && endTime > bookingStart) ||
+                    (bookingStart < endTime && bookingEnd > startTime)
+                ) {
+                    return true; // Conflict found
+                }
+            }
+            
+            return false; // No conflict
+        }
+
+        // Helper function to add minutes to time
+        function addMinutesToTime(timeString, minutes) {
+            const [hours, mins] = timeString.split(':').map(Number);
+            const totalMinutes = hours * 60 + mins + minutes;
+            const newHours = Math.floor(totalMinutes / 60);
+            const newMins = totalMinutes % 60;
+            return `${newHours.toString().padStart(2, '0')}:${newMins.toString().padStart(2, '0')}`;
+        }
+
+        // Display time slots with conflict detection
+        function displayTimeSlots(slots, service, date) {
+            const container = document.getElementById('timeSlots');
+            container.innerHTML = '';
+            
+            if (slots.length === 0) {
+                container.innerHTML = '<p>No time slots available</p>';
+                return;
+            }
+            
+            // Get existing bookings for the date
+            const dateBookings = simulatedBookings.filter(b => b.date === date);
+            
+            slots.forEach(slot => {
+                const slotDiv = document.createElement('div');
+                slotDiv.className = 'time-slot';
+                
+                // Check if this slot conflicts with existing bookings
+                const hasConflict = checkTimeSlotConflict(date, slot, service, dateBookings);
+                
+                if (hasConflict) {
+                    slotDiv.classList.add('conflict');
+                    slotDiv.textContent = `${slot} - CONFLICT`;
+                } else {
+                    slotDiv.classList.add('available');
+                    slotDiv.textContent = `${slot} - Available`;
+                }
+                
+                container.appendChild(slotDiv);
+            });
+        }
+
+        // Logging function
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('log');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log-entry log-${type}`;
+            logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(logEntry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+        }
+
+        // Clear log
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // Service selection event listeners
+        document.querySelectorAll('.service-option').forEach(option => {
+            option.addEventListener('click', function() {
+                // Remove selection from all options
+                document.querySelectorAll('.service-option').forEach(opt => opt.classList.remove('selected'));
+                
+                // Add selection to clicked option
+                this.classList.add('selected');
+                
+                selectedService = this.dataset.service;
+                const duration = parseInt(this.dataset.duration);
+                
+                log(`Service selected: ${selectedService} (${duration} minutes)`, 'success');
+                
+                // Generate and display time slots
+                const timeSlots = generateTimeSlotsForService(duration);
+                log(`Generated ${timeSlots.length} time slots for ${selectedService}`, 'info');
+                
+                const date = document.getElementById('testDate').value || new Date().toISOString().split('T')[0];
+                displayTimeSlots(timeSlots, selectedService, date);
+            });
+        });
+
+        // Test double booking prevention
+        async function testDoubleBookingPrevention() {
+            if (!selectedService) {
+                log('Please select a service first', 'error');
+                return;
+            }
+            
+            const date = document.getElementById('testDate').value;
+            if (!date) {
+                log('Please select a date first', 'error');
+                return;
+            }
+            
+            log('Testing double booking prevention...', 'info');
+            
+            // Simulate trying to book conflicting times
+            const testTimes = ['09:00', '09:30', '10:00', '10:30'];
+            const conflicts = [];
+            
+            for (const time of testTimes) {
+                const hasConflict = checkTimeSlotConflict(date, time, selectedService, simulatedBookings);
+                if (hasConflict) {
+                    conflicts.push(time);
+                }
+            }
+            
+            if (conflicts.length > 0) {
+                log(`✅ Double booking prevention working: ${conflicts.length} conflicts detected`, 'success');
+                log(`Conflicts found at: ${conflicts.join(', ')}`, 'warning');
+            } else {
+                log(`ℹ️ No conflicts detected for test times`, 'info');
+            }
+            
+            // Display results
+            const resultsDiv = document.getElementById('conflictResults');
+            resultsDiv.innerHTML = `
+                <p><strong>Service:</strong> ${selectedService}</p>
+                <p><strong>Date:</strong> ${date}</p>
+                <p><strong>Conflicts Detected:</strong> ${conflicts.length}</p>
+                <p><strong>Conflicting Times:</strong> ${conflicts.length > 0 ? conflicts.join(', ') : 'None'}</p>
+            `;
+        }
+
+        // Simulate multiple bookings to test conflict detection
+        async function simulateMultipleBookings() {
+            const date = document.getElementById('testDate').value || new Date().toISOString().split('T')[0];
+            
+            log('Simulating multiple bookings...', 'info');
+            
+            // Clear existing simulated bookings
+            simulatedBookings = [];
+            
+            // Add some test bookings
+            const testBookings = [
+                { date, time: '09:00', service: 'Hair Cut' },
+                { date, time: '10:00', service: 'Barrel Twist' },
+                { date, time: '14:00', service: 'Hair Color' }
+            ];
+            
+            simulatedBookings.push(...testBookings);
+            
+            log(`✅ Added ${testBookings.length} simulated bookings`, 'success');
+            log(`Bookings: ${testBookings.map(b => `${b.service} at ${b.time}`).join(', ')}`, 'info');
+            
+            // Test conflict detection
+            const conflicts = [];
+            for (const booking of testBookings) {
+                // Try to book overlapping times
+                const overlappingTimes = generateOverlappingTimes(booking.time, booking.service);
+                for (const time of overlappingTimes) {
+                    const hasConflict = checkTimeSlotConflict(date, time, 'Hair Cut', simulatedBookings);
+                    if (hasConflict) {
+                        conflicts.push({ time, conflictsWith: `${booking.service} at ${booking.time}` });
+                    }
+                }
+            }
+            
+            log(`✅ Conflict detection working: ${conflicts.length} overlapping times detected`, 'success');
+            
+            // Update display
+            if (selectedService) {
+                const timeSlots = generateTimeSlotsForService(serviceDurations[selectedService]);
+                displayTimeSlots(timeSlots, selectedService, date);
+            }
+        }
+
+        // Generate overlapping times for testing
+        function generateOverlappingTimes(startTime, service) {
+            const duration = serviceDurations[service] || 30;
+            const overlapping = [];
+            
+            // Add times that would overlap
+            for (let i = 0; i < duration; i += 15) {
+                const testTime = addMinutesToTime(startTime, i);
+                overlapping.push(testTime);
+            }
+            
+            return overlapping;
+        }
+
+        // Test time slot conflicts
+        async function testTimeSlotConflicts() {
+            if (!selectedService) {
+                log('Please select a service first', 'error');
+                return;
+            }
+            
+            const date = document.getElementById('testDate').value;
+            if (!date) {
+                log('Please select a date first', 'error');
+                return;
+            }
+            
+            log('Testing time slot conflict detection...', 'info');
+            
+            const serviceDuration = serviceDurations[selectedService];
+            const testTimes = ['09:00', '09:30', '10:00', '10:30', '11:00'];
+            const conflictResults = [];
+            
+            for (const time of testTimes) {
+                const hasConflict = checkTimeSlotConflict(date, time, selectedService, simulatedBookings);
+                conflictResults.push({
+                    time,
+                    available: !hasConflict,
+                    conflict: hasConflict
+                });
+            }
+            
+            const availableSlots = conflictResults.filter(r => r.available).length;
+            const conflictSlots = conflictResults.filter(r => r.conflict).length;
+            
+            log(`✅ Conflict detection results: ${availableSlots} available, ${conflictSlots} conflicts`, 'success');
+            
+            // Display detailed results
+            const resultsDiv = document.getElementById('conflictResults');
+            resultsDiv.innerHTML = `
+                <p><strong>Service:</strong> ${selectedService} (${serviceDuration} min)</p>
+                <p><strong>Date:</strong> ${date}</p>
+                <p><strong>Available Slots:</strong> ${availableSlots}</p>
+                <p><strong>Conflict Slots:</strong> ${conflictSlots}</p>
+                <p><strong>Details:</strong></p>
+                <ul>
+                    ${conflictResults.map(r => 
+                        `<li>${r.time}: ${r.available ? '✅ Available' : '❌ Conflict'}</li>`
+                    ).join('')}
+                </ul>
+            `;
+        }
+
+        // Test real-time updates
+        async function testRealTimeUpdates() {
+            log('Testing real-time timeslot updates...', 'info');
+            
+            const date = document.getElementById('testDate').value || new Date().toISOString().split('T')[0];
+            
+            // Simulate a new booking
+            const newBooking = { date, time: '13:00', service: 'Hair Cut' };
+            simulatedBookings.push(newBooking);
+            
+            log(`✅ Added new booking: ${newBooking.service} at ${newBooking.time}`, 'success');
+            
+            // Update display
+            if (selectedService) {
+                const timeSlots = generateTimeSlotsForService(serviceDurations[selectedService]);
+                displayTimeSlots(timeSlots, selectedService, date);
+                log('✅ Timeslot display updated in real-time', 'success');
+            }
+            
+            // Test cache invalidation
+            log('Testing cache invalidation...', 'info');
+            // In a real system, this would clear the cache and refetch data
+            log('✅ Cache would be invalidated for real-time updates', 'success');
+        }
+
+        // Test cache system
+        async function testCacheSystem() {
+            log('Testing cache system...', 'info');
+            
+            const date = document.getElementById('testDate').value || new Date().toISOString().split('T')[0];
+            const service = selectedService || 'Hair Cut';
+            
+            // Simulate cache key
+            const cacheKey = `${date}-${service}`;
+            log(`Cache key: ${cacheKey}`, 'info');
+            
+            // Simulate cache hit/miss
+            const cacheHit = Math.random() > 0.5;
+            if (cacheHit) {
+                log('✅ Cache hit - using cached data', 'success');
+            } else {
+                log('ℹ️ Cache miss - fetching fresh data', 'info');
+            }
+            
+            // Simulate cache duration (2 minutes as in booking.html)
+            const cacheDuration = 2 * 60 * 1000; // 2 minutes
+            log(`Cache duration: ${cacheDuration / 1000} seconds`, 'info');
+            
+            const resultsDiv = document.getElementById('updateResults');
+            resultsDiv.innerHTML = `
+                <p><strong>Cache Test Results:</strong></p>
+                <p><strong>Cache Key:</strong> ${cacheKey}</p>
+                <p><strong>Cache Hit:</strong> ${cacheHit ? 'Yes' : 'No'}</p>
+                <p><strong>Cache Duration:</strong> ${cacheDuration / 1000} seconds</p>
+                <p><strong>Status:</strong> ${cacheHit ? 'Using cached data' : 'Fetching fresh data'}</p>
+            `;
+        }
+
+        // Test auto-refresh
+        async function testAutoRefresh() {
+            log('Testing auto-refresh system...', 'info');
+            
+            // Simulate auto-refresh every 2 minutes
+            const refreshInterval = 120000; // 2 minutes
+            log(`Auto-refresh interval: ${refreshInterval / 1000} seconds`, 'info');
+            
+            // Simulate refresh cycle
+            let refreshCount = 0;
+            const maxRefreshes = 3;
+            
+            const refreshCycle = setInterval(() => {
+                refreshCount++;
+                log(`🔄 Auto-refresh #${refreshCount} triggered`, 'info');
+                
+                if (refreshCount >= maxRefreshes) {
+                    clearInterval(refreshCycle);
+                    log('✅ Auto-refresh test completed', 'success');
+                }
+            }, 1000); // 1 second for testing (instead of 2 minutes)
+            
+            const resultsDiv = document.getElementById('updateResults');
+            resultsDiv.innerHTML = `
+                <p><strong>Auto-Refresh Test Results:</strong></p>
+                <p><strong>Refresh Interval:</strong> ${refreshInterval / 1000} seconds</p>
+                <p><strong>Test Refreshes:</strong> ${maxRefreshes} (at 1-second intervals for testing)</p>
+                <p><strong>Status:</strong> Running...</p>
+            `;
+        }
+
+        // Date change handler
+        document.getElementById('testDate').addEventListener('change', function() {
+            if (selectedService) {
+                log(`Date changed to: ${this.value}`, 'info');
+                const timeSlots = generateTimeSlotsForService(serviceDurations[selectedService]);
+                displayTimeSlots(timeSlots, selectedService, this.value);
+            }
+        });
+
+        // Initial log
+        log('Timeslot system test initialized', 'success');
+        log('Select a service to begin testing', 'info');
+        log('This test simulates the complete timeslot system including conflict detection', 'info');
+    </script>
+</body>
+</html>

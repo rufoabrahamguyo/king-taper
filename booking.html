@@ -132,6 +132,36 @@
             margin-top: 0.5rem;
         }
 
+        .service-duration {
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-top: 0.3rem;
+            font-style: italic;
+        }
+
+        .service-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 0.5rem;
+        }
+
+        .duration-badge {
+            background: var(--primary);
+            color: var(--light);
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-align: center;
+            min-width: 60px;
+        }
+
+        .service-option:hover .duration-badge {
+            background: var(--accent);
+            color: var(--primary);
+        }
+
         .success-message {
             background: #4CAF50;
             color: white;
@@ -237,8 +267,8 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="email">Email Address *</label>
-                    <input type="email" id="email" name="email" required>
+                    <label for="email">Email Address</label>
+                    <input type="email" id="email" name="email">
                 </div>
                 <div class="form-group">
                     <label for="phone">Phone Number *</label>
@@ -251,27 +281,45 @@
                 <div class="service-options">
                     <div class="service-option" data-service="Hair Cut" data-price="500">
                         <strong>Hair Cut</strong>
-                        <div class="service-price">KSH 500</div>
+                        <div class="service-info">
+                            <div class="service-price">KSH 500</div>
+                            <div class="duration-badge">30 min</div>
+                        </div>
                     </div>
                     <div class="service-option" data-service="Kids Cut" data-price="300">
                         <strong>Kids Cut</strong>
-                        <div class="service-price">KSH 300</div>
+                        <div class="service-info">
+                            <div class="service-price">KSH 300</div>
+                            <div class="duration-badge">30 min</div>
+                        </div>
                     </div>
                     <div class="service-option" data-service="Coils & Haircut" data-price="1500">
                         <strong>Coils & Haircut</strong>
-                        <div class="service-price">KSH 1,500</div>
+                        <div class="service-info">
+                            <div class="service-price">KSH 1,500</div>
+                            <div class="duration-badge">30 min</div>
+                        </div>
                     </div>
                     <div class="service-option" data-service="Barrel Twist" data-price="1000">
                         <strong>Barrel Twist</strong>
-                        <div class="service-price">KSH 1,000</div>
+                        <div class="service-info">
+                            <div class="service-price">KSH 1,000</div>
+                            <div class="duration-badge">2 hours</div>
+                        </div>
                     </div>
                     <div class="service-option" data-service="Twist" data-price="1000">
                         <strong>Twist</strong>
-                        <div class="service-price">KSH 1,000</div>
+                        <div class="service-info">
+                            <div class="service-price">KSH 1,000</div>
+                            <div class="duration-badge">2 hours</div>
+                        </div>
                     </div>
                     <div class="service-option" data-service="Hair Color" data-price="500">
                         <strong>Hair Color</strong>
-                        <div class="service-price">KSH 500</div>
+                        <div class="service-info">
+                            <div class="service-price">KSH 500</div>
+                            <div class="duration-badge">1 hour</div>
+                        </div>
                     </div>
                 </div>
                 <input type="hidden" id="selectedService" name="selectedService" required>
@@ -285,27 +333,11 @@
                 </div>
                 <div class="form-group">
                     <label for="time">Preferred Time *</label>
+                    <div id="service-duration-info" style="font-size: 0.9rem; margin-bottom: 0.5rem; color: #666; display: none;">
+                        <i class="fa fa-clock"></i> <span id="duration-text"></span>
+                    </div>
                     <select id="time" name="time" required>
-                        <option value="">Select Time</option>
-                        <option value="09:00">9:00 AM</option>
-                        <option value="09:40">9:40 AM</option>
-                        <option value="10:20">10:20 AM</option>
-                        <option value="11:00">11:00 AM</option>
-                        <option value="11:40">11:40 AM</option>
-                        <option value="12:20">12:20 PM</option>
-                        <option value="13:00">1:00 PM</option>
-                        <option value="13:40">1:40 PM</option>
-                        <option value="14:20">2:20 PM</option>
-                        <option value="15:00">3:00 PM</option>
-                        <option value="15:40">3:40 PM</option>
-                        <option value="16:20">4:20 PM</option>
-                        <option value="17:00">5:00 PM</option>
-                        <option value="17:40">5:40 PM</option>
-                        <option value="18:20">6:20 PM</option>
-                        <option value="19:00">7:00 PM</option>
-                        <option value="19:40">7:40 PM</option>
-                        <option value="20:20">8:20 PM</option>
-                        <option value="21:00">9:00 PM</option>
+                        <option value="">Select a service first to see available times</option>
                     </select>
                     <div id="time-status" style="font-size: 0.9rem; margin-top: 0.5rem; color: #666; display: none;">
                         <i class="fa fa-sync-alt fa-spin"></i> Auto-updating available slots...
@@ -348,7 +380,7 @@
           <h3 class="footer-title-red">Quick Links</h3>
           <ul class="footer-links-list">
             <li><a href="about.html">About</a></li>
-            <li><a href="#contact">Contact</a></li>
+                            <li><a href="index.html#contact">Contact</a></li>
             <li><a href="booking.html">Book</a></li>
             <li><a href="services/hair.html">Services</a></li>
           </ul>
@@ -386,12 +418,12 @@
           // Helper function to get service duration
           function getServiceDuration(service) {
             const durations = {
-              'Hair Cut': 30,
-              'Kids Cut': 30,
-              'Coils & Haircut': 30,
-              'Barrel Twist': 120, // 2 hours
-              'Twist': 120,        // 2 hours
-              'Hair Color': 60     // 1 hour
+              'Hair Cut': 30,        // 30 minutes
+              'Kids Cut': 30,        // 30 minutes
+              'Coils & Haircut': 30, // 30 minutes
+              'Barrel Twist': 120,   // 2 hours
+              'Twist': 120,          // 2 hours
+              'Hair Color': 60       // 1 hour
             };
             return durations[service] || 30;
           }
@@ -401,20 +433,19 @@
             const slots = [];
             const startHour = 9; // 9 AM
             const endHour = 21;  // 9 PM
-            const interval = 30; // 30-minute intervals
             
-            for (let hour = startHour; hour < endHour; hour++) {
-              for (let minute = 0; minute < 60; minute += interval) {
-                const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-                
-                // Check if this slot can accommodate the service duration
-                const endHour = Math.floor((hour * 60 + minute + duration) / 60);
-                const endMinute = (hour * 60 + minute + duration) % 60;
-                
-                if (endHour < 21 || (endHour === 21 && endMinute === 0)) {
-                  slots.push(timeString);
-                }
-              }
+            // Calculate how many slots we can fit in the working hours
+            const workingMinutes = (endHour - startHour) * 60;
+            const maxSlots = Math.floor(workingMinutes / duration);
+            
+            for (let i = 0; i < maxSlots; i++) {
+              const startMinute = startHour * 60 + (i * duration);
+              const hour = Math.floor(startMinute / 60);
+              const minute = startMinute % 60;
+              
+              // Format time as HH:MM
+              const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+              slots.push(timeString);
             }
             
             return slots;
@@ -431,6 +462,7 @@
             
             // Generate time slots based on service duration
             const timeSlots = generateTimeSlotsForService(serviceDuration);
+            console.log('Generated time slots for', selectedService, ':', timeSlots);
             
             // Clear the time select
             timeSelect.innerHTML = '';
@@ -450,13 +482,29 @@
               availableTimes.forEach(time => {
                 const opt = document.createElement('option');
                 opt.value = time;
-                opt.textContent = time.replace(/^(\d{1,2}):(\d{2})$/, (m, h, min) => {
+                
+                // Calculate end time for display
+                const startTime = new Date(`2000-01-01T${time}:00`);
+                const endTime = new Date(startTime.getTime() + serviceDuration * 60000);
+                const endTimeString = endTime.toTimeString().slice(0, 5);
+                
+                // Format display text with duration info
+                const displayText = time.replace(/^(\d{1,2}):(\d{2})$/, (m, h, min) => {
                   let hour = parseInt(h, 10);
                   let ampm = hour >= 12 ? 'PM' : 'AM';
                   if (hour > 12) hour -= 12;
                   if (hour === 0) hour = 12;
                   return `${hour}:${min} ${ampm}`;
                 });
+                
+                opt.textContent = `${displayText} - ${endTimeString.replace(/^(\d{1,2}):(\d{2})$/, (m, h, min) => {
+                  let hour = parseInt(h, 10);
+                  let ampm = hour >= 12 ? 'PM' : 'AM';
+                  if (hour > 12) hour -= 12;
+                  if (hour === 0) hour = 12;
+                  return `${hour}:${min} ${ampm}`;
+                })} (${serviceDuration} min)`;
+                
                 timeSelect.appendChild(opt);
               });
               timeSelect.disabled = false;
@@ -541,9 +589,31 @@
               
               console.log('Hidden inputs updated:', selectedServiceInput.value, selectedPriceInput.value);
               
+              // Show service duration info
+              const durationInfo = document.getElementById('service-duration-info');
+              const durationText = document.getElementById('duration-text');
+              const serviceDuration = getServiceDuration(this.dataset.service);
+              
+              if (serviceDuration >= 60) {
+                const hours = Math.floor(serviceDuration / 60);
+                const minutes = serviceDuration % 60;
+                if (minutes > 0) {
+                  durationText.textContent = `Service duration: ${hours}h ${minutes}m`;
+                } else {
+                  durationText.textContent = `Service duration: ${hours} hour${hours > 1 ? 's' : ''}`;
+                }
+              } else {
+                durationText.textContent = `Service duration: ${serviceDuration} minutes`;
+              }
+              durationInfo.style.display = 'block';
+              
               // Refresh time slots based on new service selection
               if (dateInput.value) {
                 highlightBookedTimes(dateInput.value, this.dataset.service);
+              } else {
+                // If no date selected, show available slots for today
+                const today = new Date().toISOString().split('T')[0];
+                highlightBookedTimes(today, this.dataset.service);
               }
             });
           });
@@ -556,6 +626,20 @@
             }
           });
 
+          // Function to reset time selection when no service is selected
+          function resetTimeSelection() {
+            timeSelect.innerHTML = '<option value="">Select a service first to see available times</option>';
+            timeSelect.disabled = true;
+            timeSelect.classList.add('time-select-disabled');
+            
+            // Hide duration info
+            const durationInfo = document.getElementById('service-duration-info');
+            durationInfo.style.display = 'none';
+          }
+
+          // Initial state - disable time selection until service is chosen
+          resetTimeSelection();
+          
           // Initial highlight if date is pre-filled
           if (dateInput.value) {
             const selectedService = selectedServiceInput.value;
@@ -629,8 +713,8 @@
             const date = formData.get('date');
             const time = formData.get('time');
             
-            if (!firstName || !lastName || !email || !phone || !service || !date || !time) {
-              document.getElementById('booking-error').textContent = 'Please fill in all required fields.';
+            if (!firstName || !lastName || !phone || !service || !date || !time) {
+                              document.getElementById('booking-error').textContent = 'Please fill in all required fields (First Name, Last Name, Phone, Service, Date, and Time).';
               document.getElementById('booking-error').style.display = 'block';
               return;
             }
@@ -671,7 +755,7 @@
         
             const message = `New Booking Request:\n
         Name: ${bookingData.name}
-        Email: ${bookingData.email}
+        Email: ${bookingData.email || 'Not provided'}
         Phone: ${bookingData.phone}
         Service: ${bookingData.service} (KSH ${bookingData.price})
         Date: ${bookingData.date}
@@ -715,6 +799,10 @@
                 serviceOptions.forEach(opt => opt.classList.remove('selected'));
                 selectedServiceInput.value = '';
                 selectedPriceInput.value = '';
+                
+                // Reset time selection
+                resetTimeSelection();
+                
                 // Reset button
                 submitBtn.textContent = 'Book Appointment';
                 submitBtn.disabled = false;
