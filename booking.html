@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="new.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <script src="client-config.js"></script>
     <script src="new.js"></script>
     <style>
         .booking-hero {
@@ -97,6 +98,27 @@
             border-color: var(--gold-dark);
             color: var(--light);
         }
+        
+        #booking-error {
+            background: #ffe6e6;
+            border: 2px solid #ff6b6b;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            border: 2px solid #28a745;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            color: #155724;
+            text-align: center;
+            font-weight: bold;
+        }
 
         .service-options {
             display: grid;
@@ -173,10 +195,16 @@
         }
 
         .fully-booked {
-            color: #ff6b6b;
-            font-weight: bold;
-            background: #ffe6e6;
-            border: 2px solid #ff6b6b;
+            color: #ff6b6b !important;
+            font-weight: bold !important;
+            background: #ffe6e6 !important;
+            border: 2px solid #ff6b6b !important;
+            cursor: not-allowed !important;
+        }
+        
+        .fully-booked option {
+            color: #ff6b6b !important;
+            background: #ffe6e6 !important;
         }
 
         .time-select-disabled {
@@ -430,6 +458,12 @@
 
           // Helper function to generate time slots based on service duration
           function generateTimeSlotsForService(duration) {
+            // Validate duration
+            if (!duration || duration <= 0) {
+              console.error('Invalid duration:', duration);
+              return [];
+            }
+            
             const slots = [];
             const startHour = 9; // 9 AM
             const endHour = 21;  // 9 PM
@@ -438,16 +472,22 @@
             const workingMinutes = (endHour - startHour) * 60;
             const maxSlots = Math.floor(workingMinutes / duration);
             
+            console.log(`Generating time slots: duration=${duration}min, workingMinutes=${workingMinutes}, maxSlots=${maxSlots}`);
+            
             for (let i = 0; i < maxSlots; i++) {
               const startMinute = startHour * 60 + (i * duration);
               const hour = Math.floor(startMinute / 60);
               const minute = startMinute % 60;
+              
+              // Ensure we don't exceed business hours
+              if (hour >= endHour) break;
               
               // Format time as HH:MM
               const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
               slots.push(timeString);
             }
             
+            console.log(`Generated ${slots.length} time slots:`, slots);
             return slots;
           }
 
@@ -469,16 +509,44 @@
             
             // Check if all slots are booked
             const availableTimes = timeSlots.filter(time => !booked.has(time));
+            console.log(`Total slots: ${timeSlots.length}, Booked: ${booked.size}, Available: ${availableTimes.length}`);
             
             if (availableTimes.length === 0) {
               // All slots are booked
-              timeSelect.innerHTML = '<option value="">Time slots fully booked</option>';
+              timeSelect.innerHTML = '<option value="">FULLY BOOKED - No available slots</option>';
               timeSelect.disabled = true;
               timeSelect.classList.add('time-select-disabled');
               timeSelect.classList.add('fully-booked');
+              
+              // Show a more prominent message
+              const timeStatus = document.getElementById('time-status');
+              if (timeStatus) {
+                timeStatus.innerHTML = '<i class="fa fa-calendar-times"></i> <strong>FULLY BOOKED</strong> - All time slots for this date and service are taken. Please select another date.';
+                timeStatus.style.display = 'block';
+                timeStatus.style.color = '#ff6b6b';
+                timeStatus.style.fontWeight = 'bold';
+                timeStatus.style.background = '#ffe6e6';
+                timeStatus.style.padding = '0.5rem';
+                timeStatus.style.borderRadius = '4px';
+                timeStatus.style.border = '1px solid #ff6b6b';
+              }
             } else {
               // Add placeholder and available times
-              timeSelect.innerHTML = '<option value="">Select Time</option>';
+              timeSelect.innerHTML = `<option value="">Select Time (${availableTimes.length} slots available)</option>`;
+              
+              // Show availability status
+              const timeStatus = document.getElementById('time-status');
+              if (timeStatus) {
+                timeStatus.innerHTML = `<i class="fa fa-calendar-check"></i> <strong>${availableTimes.length} time slots available</strong> for ${selectedService}`;
+                timeStatus.style.display = 'block';
+                timeStatus.style.color = '#28a745';
+                timeStatus.style.fontWeight = 'bold';
+                timeStatus.style.background = '#d4edda';
+                timeStatus.style.padding = '0.5rem';
+                timeStatus.style.borderRadius = '4px';
+                timeStatus.style.border = '1px solid #28a745';
+              }
+              
               availableTimes.forEach(time => {
                 const opt = document.createElement('option');
                 opt.value = time;
@@ -524,7 +592,15 @@
 
           // Update the highlightBookedTimes function to include service parameter
           function highlightBookedTimes(date, service) {
-            if (!date) return;
+            if (!date) {
+              console.warn('No date provided to highlightBookedTimes');
+              return;
+            }
+            
+            if (!service) {
+              console.warn('No service provided to highlightBookedTimes');
+              return;
+            }
             
             console.log('Fetching booked times for date:', date, 'and service:', service);
             
@@ -631,14 +707,52 @@
             timeSelect.innerHTML = '<option value="">Select a service first to see available times</option>';
             timeSelect.disabled = true;
             timeSelect.classList.add('time-select-disabled');
+            timeSelect.classList.remove('fully-booked');
             
             // Hide duration info
             const durationInfo = document.getElementById('service-duration-info');
             durationInfo.style.display = 'none';
+            
+            // Clear status message
+            const timeStatus = document.getElementById('time-status');
+            if (timeStatus) {
+              timeStatus.style.display = 'none';
+              timeStatus.innerHTML = '';
+            }
           }
 
           // Initial state - disable time selection until service is chosen
           resetTimeSelection();
+          
+                      // Log system status
+            console.log('🚀 King Taper Booking System Initialized');
+            console.log('📅 Service Durations:', {
+              'Hair Cut': '30 min',
+              'Kids Cut': '30 min',
+              'Coils & Haircut': '1h 30m',
+              'Barrel Twist': '1h 30m',
+              'Twist': '1h 30m',
+              'Hair Color': '1h'
+            });
+            console.log('🔧 API Configuration:', window.KingTaperConfig);
+            
+            // Validate system configuration
+            if (!window.KingTaperConfig || !window.KingTaperConfig.apiBaseUrl) {
+              console.error('❌ KingTaperConfig not properly loaded!');
+            } else {
+              console.log('✅ Configuration loaded successfully');
+            }
+            
+            // Test service duration function
+            const testService = 'Barrel Twist';
+            const testDuration = getServiceDuration(testService);
+            console.log(`🧪 Test: ${testService} duration = ${testDuration} minutes`);
+            
+            if (testDuration !== 90) {
+              console.error('❌ Service duration mismatch! Expected 90, got', testDuration);
+            } else {
+              console.log('✅ Service duration function working correctly');
+            }
           
           // Initial highlight if date is pre-filled
           if (dateInput.value) {
@@ -646,6 +760,18 @@
             if (selectedService) {
               highlightBookedTimes(dateInput.value, selectedService);
             }
+          }
+          
+          // Add a helpful message about the booking system
+          const initialTimeStatus = document.getElementById('time-status');
+          if (initialTimeStatus) {
+            initialTimeStatus.innerHTML = '<i class="fa fa-info-circle"></i> <strong>Tip:</strong> Select a service and date to see available time slots. Booked slots are automatically filtered out.';
+            initialTimeStatus.style.display = 'block';
+            initialTimeStatus.style.color = '#17a2b8';
+            initialTimeStatus.style.background = '#d1ecf1';
+            initialTimeStatus.style.padding = '0.5rem';
+            initialTimeStatus.style.borderRadius = '4px';
+            initialTimeStatus.style.border = '1px solid #17a2b8';
           }
           
           // Auto-refresh available times every 2 minutes to catch real-time updates
@@ -657,7 +783,9 @@
             autoRefreshInterval = setInterval(() => {
               if (dateInput.value && !timeSelect.disabled) {
                 console.log('Auto-refreshing available time slots...');
-                timeStatus.style.display = 'block';
+                if (timeStatus) {
+                  timeStatus.style.display = 'block';
+                }
                 const selectedService = selectedServiceInput.value;
                 if (selectedService) {
                   highlightBookedTimes(dateInput.value, selectedService);
@@ -690,8 +818,16 @@
             e.preventDefault();
             
             // Check if time slots are fully booked
-            if (timeSelect.disabled) {
-              document.getElementById('booking-error').textContent = 'Sorry, all time slots for this date are fully booked. Please select another date.';
+            if (timeSelect.disabled || timeSelect.classList.contains('fully-booked')) {
+              document.getElementById('booking-error').textContent = 'Sorry, all time slots for this date and service are fully booked. Please select another date or service.';
+              document.getElementById('booking-error').style.display = 'block';
+              return;
+            }
+            
+            // Double-check that the selected time is still available
+            const selectedTime = formData.get('time');
+            if (!selectedTime || selectedTime === '') {
+              document.getElementById('booking-error').textContent = 'Please select a valid time slot.';
               document.getElementById('booking-error').style.display = 'block';
               return;
             }
@@ -705,16 +841,35 @@
             }
             
             // Validate required fields
-            const firstName = formData.get('firstName');
-            const lastName = formData.get('lastName');
-            const email = formData.get('email');
-            const phone = formData.get('phone');
+            const firstName = formData.get('firstName').trim();
+            const lastName = formData.get('lastName').trim();
+            const email = formData.get('email').trim();
+            const phone = formData.get('phone').trim();
             const service = formData.get('selectedService');
             const date = formData.get('date');
             const time = formData.get('time');
             
+            // Check for empty required fields
             if (!firstName || !lastName || !phone || !service || !date || !time) {
-                              document.getElementById('booking-error').textContent = 'Please fill in all required fields (First Name, Last Name, Phone, Service, Date, and Time).';
+              document.getElementById('booking-error').textContent = 'Please fill in all required fields (First Name, Last Name, Phone, Service, Date, and Time).';
+              document.getElementById('booking-error').style.display = 'block';
+              return;
+            }
+            
+            // Validate phone number format (basic validation)
+            const phoneRegex = /^(\+254|0)?[17]\d{8}$/;
+            if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+              document.getElementById('booking-error').textContent = 'Please enter a valid Kenyan phone number.';
+              document.getElementById('booking-error').style.display = 'block';
+              return;
+            }
+            
+            // Validate date is not in the past
+            const selectedDate = new Date(date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (selectedDate < today) {
+              document.getElementById('booking-error').textContent = 'Please select a future date for your appointment.';
               document.getElementById('booking-error').style.display = 'block';
               return;
             }
@@ -766,12 +921,18 @@
             const waURL = `https://wa.me/254757904681?text=${encodeURIComponent(message)}`;
             const waTab = window.open('', '_blank');
         
+            // Add timeout to prevent hanging requests
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+            
             fetch(API_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(bookingData)
+              body: JSON.stringify(bookingData),
+              signal: controller.signal
             })
             .then(response => {
+              clearTimeout(timeoutId); // Clear timeout on response
               console.log('Response status:', response.status);
               console.log('Response headers:', response.headers);
               return response.json();
@@ -821,8 +982,19 @@
               }
             })
             .catch(error => {
+              clearTimeout(timeoutId); // Clear timeout on error
               console.error('Fetch error:', error);
-              document.getElementById('booking-error').textContent = 'Network error: ' + error.message;
+              let errorMessage = 'Network error occurred while booking. ';
+              
+              if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                errorMessage += 'Please check your internet connection and try again.';
+              } else if (error.name === 'AbortError') {
+                errorMessage += 'Request was cancelled. Please try again.';
+              } else {
+                errorMessage += 'Please try again in a few moments.';
+              }
+              
+              document.getElementById('booking-error').textContent = errorMessage;
               document.getElementById('booking-error').style.display = 'block';
               waTab.close();
               // Reset button

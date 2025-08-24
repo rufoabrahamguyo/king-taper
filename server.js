@@ -135,10 +135,10 @@ db.query(
 const SERVICE_DURATIONS = {
   'Hair Cut': 30,
   'Kids Cut': 30,
-  'Coils & Haircut': 30,
-  'Barrel Twist': 120, // 2 hours
-  'Twist': 120,        // 2 hours
-  'Hair Color': 60     // 1 hour
+  'Coils & Haircut': 90, // 1 hour 30 minutes
+  'Barrel Twist': 90,    // 1 hour 30 minutes
+  'Twist': 90,           // 1 hour 30 minutes
+  'Hair Color': 60       // 1 hour
 };
 
 // Business hours - 30-minute intervals for maximum flexibility
