@@ -989,3 +989,76 @@ input:focus, select:focus, textarea:focus {
     height: 9px;
   }
 }
+
+/* Tuesday Closed State Styling */
+.time-select-disabled.tuesday-closed {
+  background-color: #ffe6e6;
+  border-color: #ff6b6b;
+  color: #ff6b6b;
+  cursor: not-allowed;
+}
+
+.time-select-disabled.tuesday-closed option {
+  color: #ff6b6b;
+  font-weight: bold;
+}
+
+/* Tuesday Warning State Styling */
+.tuesday-warning-animation {
+  animation: pulse-tuesday-warning 2s infinite;
+}
+
+@keyframes pulse-tuesday-warning {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 140, 0, 0.7);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 10px rgba(255, 140, 0, 0);
+  }
+}
+
+/* Enhanced Tuesday closed message styling */
+.tuesday-closed-animation {
+  animation: pulse-tuesday 2s infinite;
+}
+
+@keyframes pulse-tuesday {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.7);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 10px rgba(255, 107, 107, 0);
+  }
+}
+
+/* Past Times State Styling */
+.time-select-disabled.past-times {
+  background-color: #fff3cd;
+  border-color: #ff8c00;
+  color: #ff8c00;
+  cursor: not-allowed;
+}
+
+.time-select-disabled.past-times option {
+  color: #ff8c00;
+  font-weight: bold;
+}
+
+.past-times-animation {
+  animation: pulse-past-times 2s infinite;
+}
+
+@keyframes pulse-past-times {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(255, 140, 0, 0.7);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 0 0 10px rgba(255, 140, 0, 0);
+  }
+}

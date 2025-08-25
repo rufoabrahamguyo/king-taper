@@ -358,6 +358,9 @@
                 <div class="form-group">
                     <label for="date">Preferred Date *</label>
                     <input type="date" id="date" name="date" required min="">
+                    <small style="color: #ff6b6b; font-weight: bold; display: block; margin-top: 0.5rem;">
+                        <i class="fa fa-info-circle"></i> We are closed on Tuesdays
+                    </small>
                 </div>
                 <div class="form-group">
                     <label for="time">Preferred Time *</label>
@@ -370,6 +373,7 @@
                     <div id="time-status" style="font-size: 0.9rem; margin-top: 0.5rem; color: #666; display: none;">
                         <i class="fa fa-sync-alt fa-spin"></i> Auto-updating available slots...
                     </div>
+
                 </div>
             </div>
 
@@ -430,12 +434,46 @@
           // Set minimum date to today for date picker
           const today = new Date().toISOString().split('T')[0];
           document.getElementById('date').min = today;
+          
+          // Get date input element
+          const dateInput = document.getElementById('date');
+          
+          // Add date input event listener to prevent Tuesday selection
+          dateInput.addEventListener('input', function() {
+            const selectedDate = new Date(this.value);
+            const dayOfWeek = selectedDate.getDay();
+            
+            // If Tuesday is selected, show warning and clear the date
+            if (dayOfWeek === 2) {
+              // Show a more user-friendly message
+              const timeStatus = document.getElementById('time-status');
+              if (timeStatus) {
+                timeStatus.innerHTML = '<i class="fa fa-exclamation-triangle"></i> <strong>TUESDAY SELECTED</strong> - We are closed on Tuesdays. Please select another day.';
+                timeStatus.style.display = 'block';
+                timeStatus.style.color = '#ff8c00';
+                timeStatus.style.fontWeight = 'bold';
+                timeStatus.style.background = '#fff3cd';
+                timeStatus.style.padding = '0.5rem';
+                timeStatus.style.borderRadius = '4px';
+                timeStatus.style.border = '1px solid #ff8c00';
+                timeStatus.classList.add('tuesday-warning-animation');
+              }
+              
+              // Clear the date after a short delay to let user see the message
+              setTimeout(() => {
+                this.value = '';
+                if (timeStatus) {
+                  timeStatus.style.display = 'none';
+                }
+              }, 3000);
+              return;
+            }
+          });
         
           // Service selection logic
           const serviceOptions = document.querySelectorAll('.service-option');
           const selectedServiceInput = document.getElementById('selectedService');
           const selectedPriceInput = document.getElementById('selectedPrice');
-          const dateInput = document.getElementById('date');
           const timeSelect = document.getElementById('time');
           const submitBtn = document.getElementById('submitBtn');
 
@@ -491,8 +529,27 @@
             return slots;
           }
 
+          // Helper function to check if a time slot has passed for today
+          function isTimeSlotPassed(timeString, selectedDate) {
+            const today = new Date();
+            const selectedDateObj = new Date(selectedDate);
+            
+            // If it's not today, all time slots are available
+            if (selectedDateObj.toDateString() !== today.toDateString()) {
+              return false;
+            }
+            
+            // For today, check if the time has passed
+            const currentTime = today.getHours() * 60 + today.getMinutes(); // Current time in minutes
+            const [hours, minutes] = timeString.split(':').map(Number);
+            const slotTime = hours * 60 + minutes; // Slot time in minutes
+            
+            // Add 15 minutes buffer to prevent very tight bookings
+            return slotTime <= (currentTime + 15);
+          }
+
           // Update the time slot generation to be dynamic based on service duration
-          function updateTimeSelect(bookedTimes, selectedService) {
+          function updateTimeSelect(bookedTimes, selectedService, selectedDate) {
             const booked = new Set(bookedTimes);
             console.log('Booked times received:', Array.from(booked));
             console.log('Booked times type:', typeof bookedTimes, 'Length:', bookedTimes.length);
@@ -508,29 +565,71 @@
             // Clear the time select
             timeSelect.innerHTML = '';
             
-            // Check if all slots are booked
-            const availableTimes = timeSlots.filter(time => !booked.has(time));
-            console.log(`Total slots: ${timeSlots.length}, Booked: ${booked.size}, Available: ${availableTimes.length}`);
+            // Filter out booked times and past times
+            const availableTimes = timeSlots.filter(time => {
+              const isBooked = booked.has(time);
+              const isPassed = isTimeSlotPassed(time, selectedDate);
+              
+              if (isPassed) {
+                console.log(`Time slot ${time} filtered out - already passed`);
+              }
+              if (isBooked) {
+                console.log(`Time slot ${time} filtered out - already booked`);
+              }
+              
+              return !isBooked && !isPassed;
+            });
+            
+            console.log(`Total slots: ${timeSlots.length}, Booked: ${booked.size}, Past: ${timeSlots.length - booked.size - availableTimes.length}, Available: ${availableTimes.length}`);
             console.log('Available times:', availableTimes);
             
             if (availableTimes.length === 0) {
-              // All slots are booked
-              timeSelect.innerHTML = '<option value="">FULLY BOOKED - No available slots</option>';
-              timeSelect.disabled = true;
-              timeSelect.classList.add('time-select-disabled');
-              timeSelect.classList.add('fully-booked');
+              // Check if it's because all slots are in the past for today
+              const selectedDateObj = new Date(selectedDate);
+              const today = new Date();
+              const isToday = selectedDateObj.toDateString() === today.toDateString();
+              const pastTimesCount = timeSlots.length - booked.size;
               
-              // Show a more prominent message
-              const timeStatus = document.getElementById('time-status');
-              if (timeStatus) {
-                timeStatus.innerHTML = '<i class="fa fa-calendar-times"></i> <strong>FULLY BOOKED</strong> - All time slots for this date and service are taken. Please select another date.';
-                timeStatus.style.display = 'block';
-                timeStatus.style.color = '#ff6b6b';
-                timeStatus.style.fontWeight = 'bold';
-                timeStatus.style.background = '#ffe6e6';
-                timeStatus.style.padding = '0.5rem';
-                timeStatus.style.borderRadius = '4px';
-                timeStatus.style.border = '1px solid #ff6b6b';
+              if (isToday && pastTimesCount > 0) {
+                // All slots are in the past for today
+                timeSelect.innerHTML = '<option value="">ALL SLOTS IN THE PAST - Please select tomorrow or later</option>';
+                timeSelect.disabled = true;
+                timeSelect.classList.add('time-select-disabled');
+                timeSelect.classList.add('past-times');
+                
+                // Show past times message
+                const timeStatus = document.getElementById('time-status');
+                if (timeStatus) {
+                  timeStatus.innerHTML = '<i class="fa fa-clock"></i> <strong>ALL SLOTS IN THE PAST</strong> - All available time slots for today have already passed. Please select tomorrow or a future date.';
+                  timeStatus.style.display = 'block';
+                  timeStatus.style.color = '#ff8c00';
+                  timeStatus.style.fontWeight = 'bold';
+                  timeStatus.style.background = '#fff3cd';
+                  timeStatus.style.padding = '0.5rem';
+                  timeStatus.style.borderRadius = '4px';
+                  timeStatus.style.border = '1px solid #ff8c00';
+                  timeStatus.classList.add('past-times-animation');
+                }
+              } else {
+                // All slots are booked
+                timeSelect.innerHTML = '<option value="">FULLY BOOKED - No available slots</option>';
+                timeSelect.disabled = true;
+                timeSelect.classList.add('time-select-disabled');
+                timeSelect.classList.add('fully-booked');
+                
+                // Show a more prominent message
+                const timeStatus = document.getElementById('time-status');
+                if (timeStatus) {
+                  timeStatus.innerHTML = '<i class="fa fa-calendar-times"></i> <strong>FULLY BOOKED</strong> - All time slots for this date and service are taken. Please select another date.';
+                  timeStatus.style.display = 'block';
+                  timeStatus.style.color = '#ff6b6b';
+                  timeStatus.style.fontWeight = 'bold';
+                  timeStatus.style.background = '#ffe6e6';
+                  timeStatus.style.padding = '0.5rem';
+                  timeStatus.style.borderRadius = '4px';
+                  timeStatus.style.border = '1px solid #ff6b6b';
+                  timeStatus.classList.add('tuesday-closed-animation');
+                }
               }
             } else {
               // Add placeholder and available times
@@ -604,6 +703,31 @@
               return;
             }
             
+            // Check if selected date is Tuesday (day 2)
+            const selectedDate = new Date(date);
+            const dayOfWeek = selectedDate.getDay();
+            if (dayOfWeek === 2) {
+              // Clear time selection and show Tuesday off message
+              timeSelect.innerHTML = '<option value="">We are closed on Tuesdays</option>';
+              timeSelect.disabled = true;
+              timeSelect.classList.add('time-select-disabled');
+              timeSelect.classList.add('tuesday-closed');
+              
+              // Show Tuesday off message
+              const timeStatus = document.getElementById('time-status');
+              if (timeStatus) {
+                timeStatus.innerHTML = '<i class="fa fa-calendar-times"></i> <strong>CLOSED ON TUESDAYS</strong> - We are off on Tuesdays. Please select another day for your appointment.';
+                timeStatus.style.display = 'block';
+                timeStatus.style.color = '#ff6b6b';
+                timeStatus.style.fontWeight = 'bold';
+                timeStatus.style.background = '#ffe6e6';
+                timeStatus.style.padding = '0.5rem';
+                timeStatus.style.borderRadius = '4px';
+                timeStatus.style.border = '1px solid #ff6b6b';
+              }
+              return; // Don't proceed with fetching time slots
+            }
+            
             console.log('Fetching booked times for date:', date, 'and service:', service);
             
             // Check cache first
@@ -611,7 +735,7 @@
             const cached = bookedTimesCache.get(cacheKey);
             if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
               console.log('Using cached data for:', cacheKey);
-              updateTimeSelect(cached.times, service);
+              updateTimeSelect(cached.times, service, date);
               return;
             }
             
@@ -640,13 +764,13 @@
                   timestamp: Date.now()
                 });
                 
-                updateTimeSelect(data.times, service);
+                updateTimeSelect(data.times, service, date);
               })
               .catch(error => {
                 clearTimeout(timeoutId); // Clear timeout on error
                 console.error('Error fetching booked times:', error);
                 // Fallback to showing all times if API fails
-                updateTimeSelect([], service);
+                updateTimeSelect([], service, date);
               });
           }
 
@@ -698,6 +822,33 @@
 
           // Update date change handler to include service
           dateInput.addEventListener('change', function() {
+            const selectedDate = new Date(this.value);
+            const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, 2 = Tuesday
+            
+            // Check if selected date is Tuesday (day 2)
+            if (dayOfWeek === 2) {
+              // Clear time selection and show Tuesday off message
+              timeSelect.innerHTML = '<option value="">We are closed on Tuesdays</option>';
+              timeSelect.disabled = true;
+              timeSelect.classList.add('time-select-disabled');
+              timeSelect.classList.add('tuesday-closed');
+              
+              // Show Tuesday off message
+              const timeStatus = document.getElementById('time-status');
+              if (timeStatus) {
+                timeStatus.innerHTML = '<i class="fa fa-calendar-times"></i> <strong>CLOSED ON TUESDAYS</strong> - We are off on Tuesdays. Please select another day for your appointment.';
+                timeStatus.style.display = 'block';
+                timeStatus.style.color = '#ff6b6b';
+                timeStatus.style.fontWeight = 'bold';
+                timeStatus.style.background = '#ffe6e6';
+                timeStatus.style.padding = '0.5rem';
+                timeStatus.style.borderRadius = '4px';
+                timeStatus.style.border = '1px solid #ff6b6b';
+                timeStatus.classList.add('tuesday-closed-animation');
+              }
+              return; // Don't proceed with fetching time slots
+            }
+            
             const selectedService = selectedServiceInput.value;
             if (selectedService) {
               highlightBookedTimes(this.value, selectedService);
@@ -777,7 +928,7 @@
           // Add a helpful message about the booking system
           const initialTimeStatus = document.getElementById('time-status');
           if (initialTimeStatus) {
-            initialTimeStatus.innerHTML = '<i class="fa fa-info-circle"></i> <strong>Tip:</strong> Select a service and date to see available time slots. Booked slots are automatically filtered out.';
+            initialTimeStatus.innerHTML = '<i class="fa fa-info-circle"></i> <strong>Tip:</strong> Select a service and date to see available time slots. Booked slots are automatically filtered out. <strong>Note: We are closed on Tuesdays.</strong>';
             initialTimeStatus.style.display = 'block';
             initialTimeStatus.style.color = '#17a2b8';
             initialTimeStatus.style.background = '#d1ecf1';
@@ -880,6 +1031,14 @@
             today.setHours(0, 0, 0, 0);
             if (selectedDate < today) {
               document.getElementById('booking-error').textContent = 'Please select a future date for your appointment.';
+              document.getElementById('booking-error').style.display = 'block';
+              return;
+            }
+            
+            // Check if selected date is Tuesday (day 2)
+            const dayOfWeek = selectedDate.getDay();
+            if (dayOfWeek === 2) {
+              document.getElementById('booking-error').textContent = 'We are closed on Tuesdays. Please select another day for your appointment.';
               document.getElementById('booking-error').style.display = 'block';
               return;
             }
