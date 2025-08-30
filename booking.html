@@ -588,10 +588,19 @@
               const selectedDateObj = new Date(selectedDate);
               const today = new Date();
               const isToday = selectedDateObj.toDateString() === today.toDateString();
-              const pastTimesCount = timeSlots.length - booked.size;
               
-              if (isToday && pastTimesCount > 0) {
-                // All slots are in the past for today
+              // Count actual past times (not just non-booked slots)
+              let actualPastTimesCount = 0;
+              if (isToday) {
+                timeSlots.forEach(time => {
+                  if (isTimeSlotPassed(time, selectedDate)) {
+                    actualPastTimesCount++;
+                  }
+                });
+              }
+              
+              if (isToday && actualPastTimesCount > 0 && actualPastTimesCount === (timeSlots.length - booked.size)) {
+                // All non-booked slots are in the past for today
                 timeSelect.innerHTML = '<option value="">ALL SLOTS IN THE PAST - Please select tomorrow or later</option>';
                 timeSelect.disabled = true;
                 timeSelect.classList.add('time-select-disabled');
