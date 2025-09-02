@@ -438,37 +438,46 @@
           // Get date input element
           const dateInput = document.getElementById('date');
           
-          // Add date input event listener to prevent Tuesday selection
-          dateInput.addEventListener('input', function() {
-            const selectedDate = new Date(this.value);
-            const dayOfWeek = selectedDate.getDay();
-            
-            // If Tuesday is selected, show warning and clear the date
-            if (dayOfWeek === 2) {
-              // Show a more user-friendly message
-              const timeStatus = document.getElementById('time-status');
-              if (timeStatus) {
-                timeStatus.innerHTML = '<i class="fa fa-exclamation-triangle"></i> <strong>TUESDAY SELECTED</strong> - We are closed on Tuesdays. Please select another day.';
-                timeStatus.style.display = 'block';
-                timeStatus.style.color = '#ff8c00';
-                timeStatus.style.fontWeight = 'bold';
-                timeStatus.style.background = '#fff3cd';
-                timeStatus.style.padding = '0.5rem';
-                timeStatus.style.borderRadius = '4px';
-                timeStatus.style.border = '1px solid #ff8c00';
-                timeStatus.classList.add('tuesday-warning-animation');
-              }
-              
-              // Clear the date after a short delay to let user see the message
-              setTimeout(() => {
-                this.value = '';
-                if (timeStatus) {
-                  timeStatus.style.display = 'none';
-                }
-              }, 3000);
+          // Function to handle date changes and Tuesday restrictions
+          function handleDateChange() {
+            if (!dateInput.value) {
               return;
             }
-          });
+            
+            // Parse date correctly to avoid timezone issues
+            const selectedDate = new Date(dateInput.value + 'T00:00:00');
+            const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, 2 = Tuesday
+            
+            // Check if selected date is Tuesday (day 2)
+            if (dayOfWeek === 2) {
+              // Clear time selection and show Tuesday off message
+              timeSelect.innerHTML = '<option value="">We are closed on Tuesdays</option>';
+              timeSelect.disabled = true;
+              timeSelect.classList.add('time-select-disabled');
+              timeSelect.classList.add('tuesday-closed');
+              
+              // Show Tuesday off message
+              const timeStatus = document.getElementById('time-status');
+              if (timeStatus) {
+                timeStatus.innerHTML = '<i class="fa fa-calendar-times"></i> <strong>CLOSED ON TUESDAYS</strong> - We are off on Tuesdays. Please select another day for your appointment.';
+                timeStatus.style.display = 'block';
+                timeStatus.style.color = '#ff6b6b';
+                timeStatus.style.fontWeight = 'bold';
+                timeStatus.style.background = '#ffe6e6';
+                timeStatus.style.padding = '0.5rem';
+                timeStatus.style.borderRadius = '4px';
+                timeStatus.style.border = '1px solid #ff6b6b';
+                timeStatus.classList.add('tuesday-closed-animation');
+              }
+              return; // Don't proceed with fetching time slots
+            }
+            
+            // Not Tuesday - proceed with normal flow
+            const selectedService = selectedServiceInput.value;
+            if (selectedService) {
+              highlightBookedTimes(dateInput.value, selectedService);
+            }
+          }
         
           // Service selection logic
           const serviceOptions = document.querySelectorAll('.service-option');
@@ -829,40 +838,9 @@
             });
           });
 
-          // Update date change handler to include service
-          dateInput.addEventListener('change', function() {
-            const selectedDate = new Date(this.value);
-            const dayOfWeek = selectedDate.getDay(); // 0 = Sunday, 1 = Monday, 2 = Tuesday
-            
-            // Check if selected date is Tuesday (day 2)
-            if (dayOfWeek === 2) {
-              // Clear time selection and show Tuesday off message
-              timeSelect.innerHTML = '<option value="">We are closed on Tuesdays</option>';
-              timeSelect.disabled = true;
-              timeSelect.classList.add('time-select-disabled');
-              timeSelect.classList.add('tuesday-closed');
-              
-              // Show Tuesday off message
-              const timeStatus = document.getElementById('time-status');
-              if (timeStatus) {
-                timeStatus.innerHTML = '<i class="fa fa-calendar-times"></i> <strong>CLOSED ON TUESDAYS</strong> - We are off on Tuesdays. Please select another day for your appointment.';
-                timeStatus.style.display = 'block';
-                timeStatus.style.color = '#ff6b6b';
-                timeStatus.style.fontWeight = 'bold';
-                timeStatus.style.background = '#ffe6e6';
-                timeStatus.style.padding = '0.5rem';
-                timeStatus.style.borderRadius = '4px';
-                timeStatus.style.border = '1px solid #ff6b6b';
-                timeStatus.classList.add('tuesday-closed-animation');
-              }
-              return; // Don't proceed with fetching time slots
-            }
-            
-            const selectedService = selectedServiceInput.value;
-            if (selectedService) {
-              highlightBookedTimes(this.value, selectedService);
-            }
-          });
+          // Add event listeners for date changes
+          dateInput.addEventListener('change', handleDateChange);
+          dateInput.addEventListener('input', handleDateChange);
 
           // Function to reset time selection when no service is selected
           function resetTimeSelection() {
