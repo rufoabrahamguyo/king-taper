@@ -474,7 +474,8 @@ app.get('/api/available-times', async (req, res) => {
     const availableSlots = ALL_TIME_SLOTS.filter(slot => {
       // Check if this slot conflicts with any existing booking
       for (const booking of bookings) {
-        const bookingStart = booking.time;
+        // Convert database time format (HH:MM:SS) to comparison format (HH:MM)
+        const bookingStart = booking.time.includes(':') ? booking.time.split(':').slice(0, 2).join(':') : booking.time;
         const bookingService = booking.service;
         const bookingDuration = SERVICE_DURATIONS[bookingService] || 30;
         const bookingEnd = addMinutesToTime(bookingStart, bookingDuration);
