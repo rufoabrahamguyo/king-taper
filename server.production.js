@@ -455,9 +455,9 @@ app.get('/api/available-times', async (req, res) => {
       
       // Check if this slot conflicts with any existing booking
       for (const booking of bookings) {
-        const bookingStart = booking.time;
+        const bookingStart = booking.time.includes(':') ? booking.time.split(':').slice(0, 2).join(':') : booking.time;
         const bookingService = booking.service;
-        const bookingDuration = SERVICE_DURATIONS[bookingService] || 30;
+        const bookingDuration = SERVICE_DURATIONS[bookingService] || SERVICE_DURATIONS[service] || 30;
         const bookingEnd = addMinutesToTime(bookingStart, bookingDuration);
         
         const requestedDuration = SERVICE_DURATIONS[service] || 30;
