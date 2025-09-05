@@ -213,6 +213,21 @@
             cursor: not-allowed;
         }
 
+        .admin-not-available {
+            background-color: #f8d7da !important;
+            color: #dc3545 !important;
+            border-color: #dc3545 !important;
+        }
+
+        .admin-not-available-animation {
+            animation: adminNotAvailablePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes adminNotAvailablePulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
         .time-select-loading {
             background: #fff3cd;
             color: #856404;
@@ -335,10 +350,10 @@
                             <div class="duration-badge">1h 30m</div>
                         </div>
                     </div>
-                    <div class="service-option" data-service="Twist" data-price="1000">
-                        <strong>Twist</strong>
+                    <div class="service-option" data-service="Home Service" data-price="1500">
+                        <strong>Home Service</strong>
                         <div class="service-info">
-                            <div class="service-price">KSH 1,000</div>
+                            <div class="service-price">KSH 1,500</div>
                             <div class="duration-badge">1h 30m</div>
                         </div>
                     </div>
@@ -497,7 +512,7 @@
               'Kids Cut': 30,        // 30 minutes
                       'Coils & Haircut': 90, // 1 hour 30 minutes
         'Barrel Twist': 90,    // 1 hour 30 minutes
-        'Twist': 90,           // 1 hour 30 minutes
+        'Home Service': 90,    // 1 hour 30 minutes
               'Hair Color': 60       // 1 hour
             };
             return durations[service] || 30;
@@ -555,6 +570,64 @@
             
             // Add 15 minutes buffer to prevent very tight bookings
             return slotTime <= (currentTime + 15);
+          }
+
+          // Helper function to handle blocked days
+          function handleBlockedDay(reason) {
+            console.log('Day is blocked:', reason);
+            
+            // Clear the time select and disable it
+            timeSelect.innerHTML = '<option value="">ADMIN NOT AVAILABLE</option>';
+            timeSelect.disabled = true;
+            timeSelect.classList.add('time-select-disabled');
+            timeSelect.classList.add('admin-not-available');
+            
+            // Show admin not available message
+            const timeStatus = document.getElementById('time-status');
+            if (timeStatus) {
+              const reasonText = reason ? ` - ${reason}` : '';
+              timeStatus.innerHTML = `<i class="fa fa-user-times"></i> <strong>ADMIN NOT AVAILABLE</strong>${reasonText} - This day is blocked. Please select another date.`;
+              timeStatus.style.display = 'block';
+              timeStatus.style.color = '#dc3545';
+              timeStatus.style.fontWeight = 'bold';
+              timeStatus.style.background = '#f8d7da';
+              timeStatus.style.padding = '0.5rem';
+              timeStatus.style.borderRadius = '4px';
+              timeStatus.style.border = '1px solid #dc3545';
+              timeStatus.classList.add('admin-not-available-animation');
+            }
+            
+            // Remove loading state
+            timeSelect.classList.remove('time-select-loading');
+          }
+
+          // Helper function to handle fully booked days
+          function handleFullyBookedDay(reason) {
+            console.log('Day is fully booked:', reason);
+            
+            // Clear the time select and disable it
+            timeSelect.innerHTML = '<option value="">FULLY BOOKED - No available slots</option>';
+            timeSelect.disabled = true;
+            timeSelect.classList.add('time-select-disabled');
+            timeSelect.classList.add('fully-booked');
+            
+            // Show fully booked message
+            const timeStatus = document.getElementById('time-status');
+            if (timeStatus) {
+              const reasonText = reason ? ` - ${reason}` : '';
+              timeStatus.innerHTML = `<i class="fa fa-calendar-times"></i> <strong>FULLY BOOKED</strong>${reasonText} - All time slots for this date and service are taken. Please select another date.`;
+              timeStatus.style.display = 'block';
+              timeStatus.style.color = '#ff6b6b';
+              timeStatus.style.fontWeight = 'bold';
+              timeStatus.style.background = '#ffe6e6';
+              timeStatus.style.padding = '0.5rem';
+              timeStatus.style.borderRadius = '4px';
+              timeStatus.style.border = '1px solid #ff6b6b';
+              timeStatus.classList.add('tuesday-closed-animation');
+            }
+            
+            // Remove loading state
+            timeSelect.classList.remove('time-select-loading');
           }
 
           // Update the time slot generation to be dynamic based on service duration
@@ -627,6 +700,26 @@
                   timeStatus.style.borderRadius = '4px';
                   timeStatus.style.border = '1px solid #ff8c00';
                   timeStatus.classList.add('past-times-animation');
+                }
+              } else if (timeSlots.length === 0) {
+                // No time slots generated - likely a blocked day
+                timeSelect.innerHTML = '<option value="">ADMIN NOT AVAILABLE</option>';
+                timeSelect.disabled = true;
+                timeSelect.classList.add('time-select-disabled');
+                timeSelect.classList.add('admin-not-available');
+                
+                // Show admin not available message
+                const timeStatus = document.getElementById('time-status');
+                if (timeStatus) {
+                  timeStatus.innerHTML = '<i class="fa fa-user-times"></i> <strong>ADMIN NOT AVAILABLE</strong> - This day is blocked. Please select another date.';
+                  timeStatus.style.display = 'block';
+                  timeStatus.style.color = '#dc3545';
+                  timeStatus.style.fontWeight = 'bold';
+                  timeStatus.style.background = '#f8d7da';
+                  timeStatus.style.padding = '0.5rem';
+                  timeStatus.style.borderRadius = '4px';
+                  timeStatus.style.border = '1px solid #dc3545';
+                  timeStatus.classList.add('admin-not-available-animation');
                 }
               } else {
                 // All slots are booked
@@ -769,12 +862,24 @@
             }, 10000); // 10 second timeout
             
             const apiUrl = window.KingTaperConfig ? window.KingTaperConfig.apiBaseUrl : 'http://localhost:3001';
-            fetch(`${apiUrl}/api/booked-times?date=${encodeURIComponent(date)}`)
+            fetch(`${apiUrl}/api/available-times?date=${encodeURIComponent(date)}&service=${encodeURIComponent(service)}`)
               .then(res => res.json())
               .then(data => {
                 clearTimeout(timeoutId); // Clear timeout on success
-                console.log('Booked times response:', data);
+                console.log('Available times response:', data);
                 if (!data.success) return;
+                
+                // Check if the day is blocked
+                if (data.blocked) {
+                  handleBlockedDay(data.reason);
+                  return;
+                }
+                
+                // Check if the day is fully booked
+                if (data.fullyBooked) {
+                  handleFullyBookedDay(data.reason);
+                  return;
+                }
                 
                 // Cache the result
                 bookedTimesCache.set(cacheKey, {
@@ -880,7 +985,7 @@
               'Kids Cut': '30 min',
               'Coils & Haircut': '1h 30m',
               'Barrel Twist': '1h 30m',
-              'Twist': '1h 30m',
+              'Home Service': '1h 30m',
               'Hair Color': '1h'
             });
             console.log('🔧 API Configuration:', window.KingTaperConfig);

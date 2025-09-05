@@ -28,13 +28,13 @@
         .logout-btn { float: right; margin-bottom: 1rem; background: var(--accent); color: var(--primary); border: none; border-radius: var(--radius); padding: 0.5rem 1.5rem; font-size: 1rem; font-weight: bold; cursor: pointer; }
         .logout-btn:hover { background: var(--gold-dark); color: var(--light); }
         /* Modal styles */
-        #booking-modal { display: none; position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; }
-        #booking-modal .modal-content { background:#fff; padding:2rem; border-radius:8px; max-width:500px; margin:auto; position:relative; }
-        #booking-modal .close-btn { position:absolute; top:1rem; right:1rem; font-size:1.5rem; background:none; border:none; cursor:pointer; }
-        #booking-modal .form-group { margin-bottom:1rem; }
-        #booking-modal label { display:block; margin-bottom:0.3rem; }
-        #booking-modal input, #booking-modal textarea { width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; }
-        #booking-modal button { padding:0.7rem 1rem; background: var(--accent); color: var(--primary); border:none; border-radius:var(--radius); cursor:pointer; }
+        #booking-modal, #blocked-day-modal { display: none; position: fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center; }
+        #booking-modal .modal-content, #blocked-day-modal .modal-content { background:#fff; padding:2rem; border-radius:8px; max-width:500px; margin:auto; position:relative; }
+        #booking-modal .close-btn, #blocked-day-modal .close-btn { position:absolute; top:1rem; right:1rem; font-size:1.5rem; background:none; border:none; cursor:pointer; }
+        #booking-modal .form-group, #blocked-day-modal .form-group { margin-bottom:1rem; }
+        #booking-modal label, #blocked-day-modal label { display:block; margin-bottom:0.3rem; }
+        #booking-modal input, #booking-modal textarea, #blocked-day-modal input, #blocked-day-modal textarea { width:100%; padding:0.5rem; border:1px solid #ccc; border-radius:4px; }
+        #booking-modal button, #blocked-day-modal button { padding:0.7rem 1rem; background: var(--accent); color: var(--primary); border:none; border-radius:var(--radius); cursor:pointer; }
     </style>
 </head>
 <body>
@@ -68,10 +68,25 @@
                 <button id="clear-filter-btn">Clear</button>
             </div>
             
-            <!-- Blocked Time Slots Management - REMOVED -->
+            <!-- Blocked Days Management -->
             <div style="margin-bottom:2rem; padding:1rem; background:#f5f5f5; border-radius:8px;">
-                <h3 style="margin-top:0; color:var(--primary);">Blocked Time Slots</h3>
-                <p style="color: #666; font-style: italic;">This functionality has been removed for security and simplicity.</p>
+                <h3 style="margin-top:0; color:var(--primary);">Blocked Days Management</h3>
+                <div style="margin-bottom:1rem;">
+                    <button id="add-blocked-day-btn" style="background: var(--accent); color: var(--primary); border: none; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; margin-right: 0.5rem;">Add Blocked Day</button>
+                    <button id="refresh-blocked-days-btn" style="background: var(--primary); color: var(--accent); border: 1px solid var(--accent); padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer;">Refresh</button>
+                </div>
+                <table class="admin-table" id="blocked-days-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Type</th>
+                            <th>Time Range</th>
+                            <th>Reason</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
             </div>
             <table class="admin-table" id="bookings-table">
                 <thead>
@@ -81,9 +96,44 @@
                 </thead>
                 <tbody></tbody>
             </table>
+
+            <!-- Blocked Day Modal -->
+            <div id="blocked-day-modal" style="display: none;">
+              <div class="modal-content">
+                <button class="close-btn" id="close-blocked-modal-btn">&times;</button>
+                <h2 id="blocked-modal-title">Add Blocked Day</h2>
+                <form id="blocked-day-form">
+                  <input type="hidden" id="blocked-modal-id">
+                  <div class="form-group">
+                    <label>Date *</label>
+                    <input id="blocked-modal-date" type="date" required>
+                  </div>
+                  <div class="form-group">
+                    <label>
+                      <input type="checkbox" id="blocked-modal-whole-day" onchange="toggleTimeFields()"> Block entire day
+                    </label>
+                  </div>
+                  <div id="time-fields">
+                    <div class="form-group">
+                      <label>Start Time</label>
+                      <input id="blocked-modal-start-time" type="time">
+                    </div>
+                    <div class="form-group">
+                      <label>End Time</label>
+                      <input id="blocked-modal-end-time" type="time">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label>Reason</label>
+                    <input id="blocked-modal-reason" placeholder="e.g., Holiday, Event, Maintenance">
+                  </div>
+                  <button type="submit">Save</button>
+                </form>
+              </div>
+            </div>
         </div>
 
-        <!-- Modal -->
+        <!-- Booking Modal -->
         <div id="booking-modal">
           <div class="modal-content">
             <button class="close-btn" id="close-modal-btn">&times;</button>
@@ -102,6 +152,7 @@
             </form>
           </div>
         </div>
+
     </div>
 
     <script>
@@ -267,9 +318,169 @@
             });
         });
 
+        // Blocked Days Management
+        const blockedDaysTable = document.querySelector('#blocked-days-table tbody');
+        const blockedDayModal = document.getElementById('blocked-day-modal');
+        const blockedDayForm = document.getElementById('blocked-day-form');
+        const closeBlockedModalBtn = document.getElementById('close-blocked-modal-btn');
+        const addBlockedDayBtn = document.getElementById('add-blocked-day-btn');
+        const refreshBlockedDaysBtn = document.getElementById('refresh-blocked-days-btn');
+
+        // Toggle time fields based on whole day checkbox
+        function toggleTimeFields() {
+            const wholeDayCheckbox = document.getElementById('blocked-modal-whole-day');
+            const timeFields = document.getElementById('time-fields');
+            const startTimeInput = document.getElementById('blocked-modal-start-time');
+            const endTimeInput = document.getElementById('blocked-modal-end-time');
+            
+            if (wholeDayCheckbox.checked) {
+                timeFields.style.display = 'none';
+                startTimeInput.required = false;
+                endTimeInput.required = false;
+            } else {
+                timeFields.style.display = 'block';
+                startTimeInput.required = true;
+                endTimeInput.required = true;
+            }
+        }
+
+        // Load blocked days
+        async function loadBlockedDays() {
+            try {
+                const res = await fetch(`${window.API_BASE_URL}/api/admin/blocked-days`, { credentials: 'include' });
+                const data = await res.json();
+                
+                if (data.success) {
+                    blockedDaysTable.innerHTML = '';
+                    data.blockedDays.forEach(blockedDay => {
+                        const row = document.createElement('tr');
+                        const type = blockedDay.is_whole_day ? 'Whole Day' : 'Time Range';
+                        const timeRange = blockedDay.is_whole_day ? 'All Day' : 
+                            (blockedDay.start_time && blockedDay.end_time ? 
+                                `${blockedDay.start_time} - ${blockedDay.end_time}` : 'N/A');
+                        
+                        row.innerHTML = `
+                            <td>${blockedDay.date}</td>
+                            <td>${type}</td>
+                            <td>${timeRange}</td>
+                            <td>${blockedDay.reason || 'No reason provided'}</td>
+                            <td>
+                                <button onclick="editBlockedDay(${blockedDay.id})" style="background: var(--accent); color: var(--primary); border: none; padding: 0.3rem 0.6rem; border-radius: 3px; cursor: pointer; margin-right: 0.3rem;">Edit</button>
+                                <button onclick="deleteBlockedDay(${blockedDay.id})" style="background: #ff6b6b; color: white; border: none; padding: 0.3rem 0.6rem; border-radius: 3px; cursor: pointer;">Delete</button>
+                            </td>
+                        `;
+                        blockedDaysTable.appendChild(row);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading blocked days:', error);
+            }
+        }
+
+        // Add blocked day
+        addBlockedDayBtn.onclick = () => {
+            document.getElementById('blocked-modal-title').textContent = 'Add Blocked Day';
+            blockedDayForm.reset();
+            document.getElementById('blocked-modal-whole-day').checked = false;
+            toggleTimeFields();
+            blockedDayModal.style.display = 'flex';
+        };
+
+        // Edit blocked day
+        window.editBlockedDay = async (id) => {
+            try {
+                const res = await fetch(`${window.API_BASE_URL}/api/admin/blocked-days`, { credentials: 'include' });
+                const data = await res.json();
+                const blockedDay = data.blockedDays.find(bd => bd.id === id);
+                
+                if (blockedDay) {
+                    document.getElementById('blocked-modal-title').textContent = 'Edit Blocked Day';
+                    document.getElementById('blocked-modal-id').value = blockedDay.id;
+                    document.getElementById('blocked-modal-date').value = blockedDay.date;
+                    document.getElementById('blocked-modal-whole-day').checked = blockedDay.is_whole_day;
+                    document.getElementById('blocked-modal-start-time').value = blockedDay.start_time || '';
+                    document.getElementById('blocked-modal-end-time').value = blockedDay.end_time || '';
+                    document.getElementById('blocked-modal-reason').value = blockedDay.reason || '';
+                    toggleTimeFields();
+                    blockedDayModal.style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Error loading blocked day:', error);
+            }
+        };
+
+        // Delete blocked day
+        window.deleteBlockedDay = async (id) => {
+            if (confirm('Are you sure you want to delete this blocked day?')) {
+                try {
+                    const res = await fetch(`${window.API_BASE_URL}/api/admin/blocked-days/${id}`, {
+                        method: 'DELETE',
+                        credentials: 'include'
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        loadBlockedDays();
+                    } else {
+                        alert('Error deleting blocked day: ' + data.error);
+                    }
+                } catch (error) {
+                    console.error('Error deleting blocked day:', error);
+                    alert('Error deleting blocked day');
+                }
+            }
+        };
+
+        // Blocked day form submission
+        blockedDayForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = {
+                date: document.getElementById('blocked-modal-date').value,
+                isWholeDay: document.getElementById('blocked-modal-whole-day').checked,
+                startTime: document.getElementById('blocked-modal-start-time').value || null,
+                endTime: document.getElementById('blocked-modal-end-time').value || null,
+                reason: document.getElementById('blocked-modal-reason').value || null
+            };
+
+            const id = document.getElementById('blocked-modal-id').value;
+            const url = id ? `${window.API_BASE_URL}/api/admin/blocked-days/${id}` : `${window.API_BASE_URL}/api/admin/blocked-days`;
+            const method = id ? 'PUT' : 'POST';
+
+            try {
+                const res = await fetch(url, {
+                    method: method,
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await res.json();
+                if (data.success) {
+                    blockedDayModal.style.display = 'none';
+                    loadBlockedDays();
+                } else {
+                    alert('Error saving blocked day: ' + data.error);
+                }
+            } catch (error) {
+                console.error('Error saving blocked day:', error);
+                alert('Error saving blocked day');
+            }
+        });
+
+        // Close blocked day modal
+        closeBlockedModalBtn.onclick = () => blockedDayModal.style.display = 'none';
+        refreshBlockedDaysBtn.onclick = loadBlockedDays;
+
         // Auto-check login on load
         fetch(`${window.API_BASE_URL}/api/admin/bookings`, { credentials:'include' })
-        .then(res => { if (res.ok) showDashboard(); else showLogin(); });
+        .then(res => { 
+            if (res.ok) {
+                showDashboard();
+                loadBlockedDays(); // Load blocked days when dashboard is shown
+            } else {
+                showLogin();
+            }
+        });
     </script>
 </body>
 </html>

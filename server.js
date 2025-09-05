@@ -107,6 +107,25 @@ db.query(
   }
 );
 
+// Create blocked_days table
+db.query(`
+  CREATE TABLE IF NOT EXISTS blocked_days (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    date DATE NOT NULL,
+    start_time TIME,
+    end_time TIME,
+    reason VARCHAR(255),
+    is_whole_day BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`, (err) => {
+  if (err) {
+    console.error('Error creating blocked_days table:', err);
+  } else {
+    console.log('✅ Blocked days table ready');
+  }
+});
+
 // Add database index for faster date queries (MySQL 5.7+ compatible)
 db.query(
   `SHOW INDEX FROM bookings WHERE Key_name = 'idx_bookings_date'`,
@@ -137,7 +156,7 @@ const SERVICE_DURATIONS = {
   'Kids Cut': 30,
   'Coils & Haircut': 90, // 1 hour 30 minutes
   'Barrel Twist': 90,    // 1 hour 30 minutes
-  'Twist': 90,           // 1 hour 30 minutes
+  'Home Service': 90,    // 1 hour 30 minutes
   'Hair Color': 60       // 1 hour
 };
 
@@ -221,6 +240,48 @@ function checkTimeSlotConflict(date, startTime, service, db) {
   });
 }
 
+// Helper function to check if a date/time is blocked
+function checkBlockedDay(date, time, db) {
+  return new Promise(async (resolve) => {
+    try {
+      // Convert date to match database format (YYYY-MM-DD)
+      const dateStr = date.split('T')[0]; // Remove time part if present
+      console.log('🔍 Checking blocked day - input date:', date, 'converted to:', dateStr);
+      const [blockedDays] = await db.promise().query(
+        'SELECT * FROM blocked_days WHERE DATE(date) = ?',
+        [dateStr]
+      );
+      console.log('🔍 Found blocked days:', blockedDays.length, 'for date:', dateStr);
+      
+      for (const blockedDay of blockedDays) {
+        // If it's a whole day block
+        if (blockedDay.is_whole_day) {
+          resolve({ blocked: true, reason: blockedDay.reason || 'Day is blocked' });
+          return;
+        }
+        
+        // If it's a time range block
+        if (blockedDay.start_time && blockedDay.end_time && time) {
+          const requestedTime = time;
+          const blockedStart = blockedDay.start_time;
+          const blockedEnd = blockedDay.end_time;
+          
+          // Check if requested time falls within blocked time range
+          if (requestedTime >= blockedStart && requestedTime < blockedEnd) {
+            resolve({ blocked: true, reason: blockedDay.reason || 'Time slot is blocked' });
+            return;
+          }
+        }
+      }
+      
+      resolve({ blocked: false });
+    } catch (error) {
+      console.error('Error checking blocked day:', error);
+      resolve({ blocked: false }); // Allow booking on error
+    }
+  });
+}
+
 // --- ROUTES ---
 
 // Booking creation - UPDATED with duration-aware logic
@@ -231,6 +292,15 @@ app.post('/api/book', async (req, res) => {
   }
 
   try {
+    // Check if the day/time is blocked
+    const blockedCheck = await checkBlockedDay(date, time, db);
+    if (blockedCheck.blocked) {
+      return res.status(409).json({ 
+        success: false, 
+        error: blockedCheck.reason || 'This time slot is not available for booking.' 
+      });
+    }
+
     // Check if time slot conflicts with existing bookings
     const hasConflict = await checkTimeSlotConflict(date, time, service, db);
     if (hasConflict) {
@@ -379,9 +449,24 @@ app.get('/api/available-times', async (req, res) => {
   if (!service) return res.status(400).json({ success: false, error: 'Missing service parameter' });
 
   try {
+    // Check if the entire day is blocked
+    console.log('🔍 Checking blocked day for:', date);
+    const blockedCheck = await checkBlockedDay(date, null, db);
+    console.log('🔍 Blocked check result:', blockedCheck);
+    if (blockedCheck.blocked) {
+      console.log('🚫 Day is blocked, returning empty times');
+      return res.json({ success: true, times: [], blocked: true, reason: blockedCheck.reason }); // No available times - day is blocked
+    }
+
     // Get all bookings for the date
     const [bookings] = await db.promise().query(
       'SELECT time, service FROM bookings WHERE date = ?',
+      [date]
+    );
+    
+    // Get blocked time ranges for the date
+    const [blockedDays] = await db.promise().query(
+      'SELECT start_time, end_time FROM blocked_days WHERE date = ? AND is_whole_day = FALSE',
       [date]
     );
     
@@ -402,10 +487,32 @@ app.get('/api/available-times', async (req, res) => {
           return false; // Slot conflicts
         }
       }
+      
+      // Check if this slot is in a blocked time range
+      for (const blockedDay of blockedDays) {
+        if (blockedDay.start_time && blockedDay.end_time) {
+          if (slot >= blockedDay.start_time && slot < blockedDay.end_time) {
+            return false; // Slot is blocked
+          }
+        }
+      }
+      
       return true; // Slot is available
     });
     
     console.log(`📅 Date: ${date}, Service: ${service}, Available times:`, availableSlots);
+    
+    // Check if the day is fully booked (no available slots)
+    if (availableSlots.length === 0) {
+      console.log('📅 Day is fully booked, returning empty times with fullyBooked flag');
+      return res.json({ 
+        success: true, 
+        times: [], 
+        fullyBooked: true, 
+        reason: 'All time slots for this date and service are fully booked. Please select another date.' 
+      });
+    }
+    
     res.json({ success: true, times: availableSlots });
 
   } catch (error) {
@@ -503,6 +610,76 @@ app.use((err, req, res, next) => {
 });
 
 // 404 handler - only for API routes, not static files
+// Blocked Days API endpoints
+app.get('/api/admin/blocked-days', async (req, res) => {
+  if (!req.session.admin) return res.status(401).json({ success: false, error: 'Unauthorized' });
+  
+  try {
+    const [blockedDays] = await db.promise().query(
+      'SELECT * FROM blocked_days ORDER BY date DESC, start_time ASC'
+    );
+    res.json({ success: true, blockedDays });
+  } catch (error) {
+    console.error('❌ Error fetching blocked days:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/admin/blocked-days', async (req, res) => {
+  if (!req.session.admin) return res.status(401).json({ success: false, error: 'Unauthorized' });
+  
+  const { date, startTime, endTime, reason, isWholeDay } = req.body;
+  
+  if (!date) {
+    return res.status(400).json({ success: false, error: 'Date is required' });
+  }
+  
+  try {
+    await db.promise().query(
+      'INSERT INTO blocked_days (date, start_time, end_time, reason, is_whole_day) VALUES (?, ?, ?, ?, ?)',
+      [date, startTime || null, endTime || null, reason || null, isWholeDay || false]
+    );
+    
+    res.json({ success: true, message: 'Blocked day added successfully' });
+  } catch (error) {
+    console.error('❌ Error adding blocked day:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.put('/api/admin/blocked-days/:id', async (req, res) => {
+  if (!req.session.admin) return res.status(401).json({ success: false, error: 'Unauthorized' });
+  
+  const { id } = req.params;
+  const { date, startTime, endTime, reason, isWholeDay } = req.body;
+  
+  try {
+    await db.promise().query(
+      'UPDATE blocked_days SET date = ?, start_time = ?, end_time = ?, reason = ?, is_whole_day = ? WHERE id = ?',
+      [date, startTime || null, endTime || null, reason || null, isWholeDay || false, id]
+    );
+    
+    res.json({ success: true, message: 'Blocked day updated successfully' });
+  } catch (error) {
+    console.error('❌ Error updating blocked day:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.delete('/api/admin/blocked-days/:id', async (req, res) => {
+  if (!req.session.admin) return res.status(401).json({ success: false, error: 'Unauthorized' });
+  
+  const { id } = req.params;
+  
+  try {
+    await db.promise().query('DELETE FROM blocked_days WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Blocked day deleted successfully' });
+  } catch (error) {
+    console.error('❌ Error deleting blocked day:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 app.use('/api/*', (req, res) => {
   res.status(404).json({ success: false, error: 'API route not found' });
 });

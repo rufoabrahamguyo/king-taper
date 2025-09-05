@@ -142,7 +142,7 @@ const SERVICE_DURATIONS = {
   'Kids Cut': 30,
   'Coils & Haircut': 30,
   'Barrel Twist': 120, // 2 hours
-  'Twist': 120,        // 2 hours
+  'Home Service': 120, // 2 hours
   'Hair Color': 60     // 1 hour
 };
 
