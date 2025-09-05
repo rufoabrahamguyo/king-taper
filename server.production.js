@@ -272,6 +272,31 @@ app.post('/api/book', async (req, res) => {
   }
 
   try {
+    // Check if the date is in the past
+    const today = new Date().toISOString().split('T')[0];
+    if (date < today) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Cannot book appointments in the past. Please select a future date.' 
+      });
+    }
+
+    // Check if the time slot is in the past (for today's bookings)
+    if (date === today) {
+      const now = new Date();
+      const currentTime = now.getHours() * 60 + now.getMinutes();
+      const [hours, minutes] = time.split(':').map(Number);
+      const slotTime = hours * 60 + minutes;
+      
+      // Add 15 minutes buffer to prevent very tight bookings
+      if (slotTime <= (currentTime + 15)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Cannot book appointments in the past. Please select a future time slot.' 
+        });
+      }
+    }
+
     // Check if time slot conflicts with existing bookings
     const hasConflict = await checkTimeSlotConflict(date, time, service, db);
     if (hasConflict) {
@@ -412,8 +437,22 @@ app.get('/api/available-times', async (req, res) => {
       [date]
     );
     
-    // Filter out conflicting time slots
+    // Filter out conflicting time slots and past times
     const availableSlots = ALL_TIME_SLOTS.filter(slot => {
+      // Check if this slot is in the past (for today's bookings)
+      const today = new Date().toISOString().split('T')[0];
+      if (date === today) {
+        const now = new Date();
+        const currentTime = now.getHours() * 60 + now.getMinutes();
+        const [hours, minutes] = slot.split(':').map(Number);
+        const slotTime = hours * 60 + minutes;
+        
+        // Add 15 minutes buffer to prevent very tight bookings
+        if (slotTime <= (currentTime + 15)) {
+          return false; // Skip past time slots
+        }
+      }
+      
       // Check if this slot conflicts with any existing booking
       for (const booking of bookings) {
         const bookingStart = booking.time;

@@ -310,6 +310,31 @@ app.post('/api/book', async (req, res) => {
   }
 
   try {
+    // Check if the date is in the past
+    const today = new Date().toISOString().split('T')[0];
+    if (date < today) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Cannot book appointments in the past. Please select a future date.' 
+      });
+    }
+
+    // Check if the time slot is in the past (for today's bookings)
+    if (date === today) {
+      const now = new Date();
+      const currentTime = now.getHours() * 60 + now.getMinutes();
+      const [hours, minutes] = time.split(':').map(Number);
+      const slotTime = hours * 60 + minutes;
+      
+      // Add 15 minutes buffer to prevent very tight bookings
+      if (slotTime <= (currentTime + 15)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Cannot book appointments in the past. Please select a future time slot.' 
+        });
+      }
+    }
+
     // Check if the day/time is blocked
     const blockedCheck = await checkBlockedDay(date, time, db);
     if (blockedCheck.blocked) {
@@ -467,10 +492,26 @@ function generateAllSlots(day) {
   const endHour = 20;
   const interval = 30;
   
+  // Get current date and time
+  const now = new Date();
+  const today = now.toISOString().split('T')[0];
+  const currentTime = now.getHours() * 60 + now.getMinutes();
+  
+  // Check if the requested day is today
+  const isToday = day === today;
+  
   for (let hour = startHour; hour <= endHour; hour++) {
     for (let minute = 0; minute < 60; minute += interval) {
       if (hour === endHour && minute > 0) break;
+      
       const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      const slotTime = hour * 60 + minute;
+      
+      // If it's today, only include future time slots (with 15 min buffer)
+      if (isToday && slotTime <= (currentTime + 15)) {
+        continue; // Skip past time slots
+      }
+      
       slots.push(timeString);
     }
   }
