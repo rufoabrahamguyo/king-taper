@@ -534,21 +534,29 @@ async function getBookedSlots(date, service) {
   
   const requestedService = normalizeService(service);
   
+  // Get the duration of the requested service
+  const requestedDuration = SERVICE_DURATIONS[service] || 30;
+  
   for (const booking of bookings) {
     const bookingStart = booking.time.includes(':') ? booking.time.split(':').slice(0, 2).join(':') : booking.time;
     const bookingService = booking.service;
-    const normalizedBookingService = normalizeService(bookingService);
     
-    // Check if this booking conflicts with the requested service
-    // A booking blocks a slot if it's the same service OR if there's any overlap
-    const bookingDuration = SERVICE_DURATIONS[bookingService] || SERVICE_DURATIONS[service] || 30;
+    // Get the duration of the existing booking
+    const bookingDuration = SERVICE_DURATIONS[bookingService] || 30;
     const bookingEnd = addMinutesToTime(bookingStart, bookingDuration);
     
-    // Add all slots that would be blocked by this booking
-    let currentTime = bookingStart;
-    while (currentTime < bookingEnd) {
-      bookedSlots.add(currentTime);
-      currentTime = addMinutesToTime(currentTime, 30);
+    // Check all possible start times for the requested service that would overlap with this booking
+    // We need to check if a new booking of the requested service would overlap with this existing booking
+    const allSlots = generateAllSlots(date);
+    
+    for (const slot of allSlots) {
+      const slotStart = slot;
+      const slotEnd = addMinutesToTime(slotStart, requestedDuration);
+      
+      // Check if this slot would overlap with the existing booking
+      if (slotStart < bookingEnd && slotEnd > bookingStart) {
+        bookedSlots.add(slot);
+      }
     }
   }
   
