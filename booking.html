@@ -630,6 +630,42 @@
             timeSelect.classList.remove('time-select-loading');
           }
 
+          // Direct function to display available times from API (no filtering needed)
+          function updateTimeSelectDirect(availableTimes, selectedService, selectedDate) {
+            console.log('Available times from API:', availableTimes);
+            console.log('Service:', selectedService, 'Date:', selectedDate);
+            
+            // Clear the time select
+            timeSelect.innerHTML = '';
+            
+            if (availableTimes.length === 0) {
+              timeSelect.innerHTML = '<option value="">No available slots</option>';
+              timeSelect.disabled = true;
+              timeSelect.classList.add('time-select-disabled');
+              return;
+            }
+            
+            // Add available times directly
+            availableTimes.forEach(time => {
+              const option = document.createElement('option');
+              option.value = time;
+              option.textContent = time;
+              timeSelect.appendChild(option);
+            });
+            
+            // Enable the select
+            timeSelect.disabled = false;
+            timeSelect.classList.remove('time-select-disabled');
+            
+            // Clear any status messages
+            const timeStatus = document.getElementById('time-status');
+            if (timeStatus) {
+              timeStatus.style.display = 'none';
+            }
+            
+            console.log(`Displayed ${availableTimes.length} available time slots`);
+          }
+
           // Update the time slot generation to be dynamic based on service duration
           function updateTimeSelect(bookedTimes, selectedService, selectedDate) {
             const booked = new Set(bookedTimes);
@@ -887,7 +923,8 @@
                   timestamp: Date.now()
                 });
                 
-                updateTimeSelect(data.times, service, date);
+                // Use the available times directly from the API
+                updateTimeSelectDirect(data.times, service, date);
               })
               .catch(error => {
                 clearTimeout(timeoutId); // Clear timeout on error
