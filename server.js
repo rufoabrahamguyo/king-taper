@@ -126,6 +126,24 @@ db.query(`
   }
 });
 
+// Create blocked_times table for individual time slots
+db.query(`
+  CREATE TABLE IF NOT EXISTS blocked_times (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    date DATE NOT NULL,
+    time_slot TIME NOT NULL,
+    reason VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY unique_blocked_slot (date, time_slot)
+  )
+`, (err) => {
+  if (err) {
+    console.error('Error creating blocked_times table:', err);
+  } else {
+    console.log('✅ Blocked times table ready');
+  }
+});
+
 // Add database index for faster date queries (MySQL 5.7+ compatible)
 db.query(
   `SHOW INDEX FROM bookings WHERE Key_name = 'idx_bookings_date'`,
@@ -442,7 +460,95 @@ app.delete('/api/admin/bookings/:id', async (req, res) => {
 
 
 
-// Available times - UPDATED with duration-aware logic
+// Helper function to generate all possible time slots for a day
+function generateAllSlots(day) {
+  const slots = [];
+  const startHour = 9;
+  const endHour = 20;
+  const interval = 30;
+  
+  for (let hour = startHour; hour <= endHour; hour++) {
+    for (let minute = 0; minute < 60; minute += interval) {
+      if (hour === endHour && minute > 0) break;
+      const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      slots.push(timeString);
+    }
+  }
+  return slots;
+}
+
+// Helper function to get booked slots for a day
+async function getBookedSlots(date, service) {
+  const [bookings] = await db.promise().query(
+    'SELECT time, service FROM bookings WHERE date = ?',
+    [date]
+  );
+  
+  const bookedSlots = new Set();
+  
+  for (const booking of bookings) {
+    const bookingStart = booking.time.includes(':') ? booking.time.split(':').slice(0, 2).join(':') : booking.time;
+    const bookingService = booking.service;
+    const bookingDuration = SERVICE_DURATIONS[bookingService] || 30;
+    const bookingEnd = addMinutesToTime(bookingStart, bookingDuration);
+    
+    const requestedDuration = SERVICE_DURATIONS[service] || 30;
+    const requestedStart = bookingStart;
+    const requestedEnd = addMinutesToTime(requestedStart, requestedDuration);
+    
+    // Add all slots that would be blocked by this booking
+    let currentTime = requestedStart;
+    while (currentTime < requestedEnd) {
+      bookedSlots.add(currentTime);
+      currentTime = addMinutesToTime(currentTime, 30);
+    }
+  }
+  
+  return Array.from(bookedSlots);
+}
+
+// Helper function to get blocked slots for a day
+async function getBlockedSlots(date) {
+  // Get blocked individual time slots
+  const [blockedTimes] = await db.promise().query(
+    'SELECT time_slot FROM blocked_times WHERE date = ?',
+    [date]
+  );
+  
+  // Get blocked time ranges and convert to individual slots
+  const [blockedRanges] = await db.promise().query(
+    'SELECT start_time, end_time FROM blocked_days WHERE date = ? AND is_whole_day = FALSE',
+    [date]
+  );
+  
+  const blockedSlots = new Set();
+  
+  // Add individual blocked time slots
+  for (const blocked of blockedTimes) {
+    const timeSlot = blocked.time_slot.includes(':') ? 
+      blocked.time_slot.split(':').slice(0, 2).join(':') : blocked.time_slot;
+    blockedSlots.add(timeSlot);
+  }
+  
+  // Add blocked time ranges
+  for (const range of blockedRanges) {
+    if (range.start_time && range.end_time) {
+      let currentTime = range.start_time.includes(':') ? 
+        range.start_time.split(':').slice(0, 2).join(':') : range.start_time;
+      const endTime = range.end_time.includes(':') ? 
+        range.end_time.split(':').slice(0, 2).join(':') : range.end_time;
+      
+      while (currentTime < endTime) {
+        blockedSlots.add(currentTime);
+        currentTime = addMinutesToTime(currentTime, 30);
+      }
+    }
+  }
+  
+  return Array.from(blockedSlots);
+}
+
+// Available times - CLEAN SIMPLE APPROACH
 app.get('/api/available-times', async (req, res) => {
   const { date, service } = req.query;
   if (!date) return res.status(400).json({ success: false, error: 'Missing date parameter' });
@@ -450,71 +556,29 @@ app.get('/api/available-times', async (req, res) => {
 
   try {
     // Check if the entire day is blocked
-    console.log('🔍 Checking blocked day for:', date);
     const blockedCheck = await checkBlockedDay(date, null, db);
-    console.log('🔍 Blocked check result:', blockedCheck);
     if (blockedCheck.blocked) {
-      console.log('🚫 Day is blocked, returning empty times');
-      return res.json({ success: true, times: [], blocked: true, reason: blockedCheck.reason }); // No available times - day is blocked
+      return res.json({ success: true, times: [], blocked: true, reason: blockedCheck.reason });
     }
 
-    // Get all bookings for the date
-    const [bookings] = await db.promise().query(
-      'SELECT time, service FROM bookings WHERE date = ?',
-      [date]
-    );
+    // 1. Generate all possible slots
+    const allSlots = generateAllSlots(date);
     
-    // Get blocked time ranges for the date
-    const [blockedDays] = await db.promise().query(
-      'SELECT start_time, end_time FROM blocked_days WHERE date = ? AND is_whole_day = FALSE',
-      [date]
-    );
+    // 2. Get booked slots
+    const bookedSlots = await getBookedSlots(date, service);
     
-    // Filter out conflicting time slots
-    const availableSlots = ALL_TIME_SLOTS.filter(slot => {
-      // Check if this slot conflicts with any existing booking
-      for (const booking of bookings) {
-        // Convert database time format (HH:MM:SS) to comparison format (HH:MM)
-        const bookingStart = booking.time.includes(':') ? booking.time.split(':').slice(0, 2).join(':') : booking.time;
-        const bookingService = booking.service;
-        const bookingDuration = SERVICE_DURATIONS[bookingService] || 30;
-        const bookingEnd = addMinutesToTime(bookingStart, bookingDuration);
-        
-        const requestedDuration = SERVICE_DURATIONS[service] || 30;
-        const requestedEnd = addMinutesToTime(slot, requestedDuration);
-        
-        // Check for overlap
-        if (slot < bookingEnd && requestedEnd > bookingStart) {
-          return false; // Slot conflicts
-        }
-      }
-      
-      // Check if this slot is in a blocked time range
-      for (const blockedDay of blockedDays) {
-        if (blockedDay.start_time && blockedDay.end_time) {
-          if (slot >= blockedDay.start_time && slot < blockedDay.end_time) {
-            return false; // Slot is blocked
-          }
-        }
-      }
-      
-      return true; // Slot is available
-    });
+    // 3. Get blocked slots
+    const blockedSlots = await getBlockedSlots(date);
     
-    console.log(`📅 Date: ${date}, Service: ${service}, Available times:`, availableSlots);
+    // 4. Filter out booked + blocked slots
+    const unavailable = [...bookedSlots, ...blockedSlots];
+    const available = allSlots.filter(slot => !unavailable.includes(slot));
     
-    // Check if the day is fully booked (no available slots)
-    if (availableSlots.length === 0) {
-      console.log('📅 Day is fully booked, returning empty times with fullyBooked flag');
-      return res.json({ 
-        success: true, 
-        times: [], 
-        fullyBooked: true, 
-        reason: 'All time slots for this date and service are fully booked. Please select another date.' 
-      });
-    }
+    console.log(`📅 Date: ${date}, Service: ${service}`);
+    console.log(`📋 All slots: ${allSlots.length}, Booked: ${bookedSlots.length}, Blocked: ${blockedSlots.length}, Available: ${available.length}`);
     
-    res.json({ success: true, times: availableSlots });
+    // 5. Return only available slots
+    res.json({ success: true, times: available });
 
   } catch (error) {
     console.error('❌ Error fetching available times:', error);
@@ -677,6 +741,62 @@ app.delete('/api/admin/blocked-days/:id', async (req, res) => {
     res.json({ success: true, message: 'Blocked day deleted successfully' });
   } catch (error) {
     console.error('❌ Error deleting blocked day:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Blocked Times API endpoints
+app.get('/api/admin/blocked-times', async (req, res) => {
+  if (!req.session.admin) return res.status(401).json({ success: false, error: 'Unauthorized' });
+  try {
+    const { date } = req.query;
+    let sql = 'SELECT * FROM blocked_times';
+    const params = [];
+    
+    if (date) {
+      sql += ' WHERE date = ?';
+      params.push(date);
+    }
+    
+    sql += ' ORDER BY date DESC, time_slot ASC';
+    
+    const [blockedTimes] = await db.promise().query(sql, params);
+    res.json({ success: true, blockedTimes });
+  } catch (error) {
+    console.error('❌ Error fetching blocked times:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/admin/blocked-times', async (req, res) => {
+  if (!req.session.admin) return res.status(401).json({ success: false, error: 'Unauthorized' });
+  try {
+    const { date, time_slot, reason } = req.body;
+    
+    if (!date || !time_slot) {
+      return res.status(400).json({ success: false, error: 'Date and time_slot are required' });
+    }
+    
+    await db.promise().query(
+      'INSERT INTO blocked_times (date, time_slot, reason) VALUES (?, ?, ?)',
+      [date, time_slot, reason || 'Blocked by admin']
+    );
+    
+    res.json({ success: true, message: 'Blocked time added successfully' });
+  } catch (error) {
+    console.error('❌ Error adding blocked time:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.delete('/api/admin/blocked-times/:id', async (req, res) => {
+  if (!req.session.admin) return res.status(401).json({ success: false, error: 'Unauthorized' });
+  try {
+    const { id } = req.params;
+    await db.promise().query('DELETE FROM blocked_times WHERE id = ?', [id]);
+    res.json({ success: true, message: 'Blocked time deleted successfully' });
+  } catch (error) {
+    console.error('❌ Error deleting blocked time:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
