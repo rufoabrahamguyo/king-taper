@@ -319,9 +319,9 @@ app.post('/api/book', async (req, res) => {
       });
     }
 
-    // Check if time slot conflicts with existing bookings
-    const hasConflict = await checkTimeSlotConflict(date, time, service, db);
-    if (hasConflict) {
+    // Check if time slot conflicts with existing bookings using clean logic
+    const bookedSlots = await getBookedSlots(date, service);
+    if (bookedSlots.includes(time)) {
       return res.status(409).json({ 
         success: false, 
         error: 'Time slot conflicts with existing booking. Please choose another time.' 
