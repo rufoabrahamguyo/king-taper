@@ -527,10 +527,21 @@ async function getBookedSlots(date, service) {
   
   const bookedSlots = new Set();
   
+  // Normalize service names for comparison
+  const normalizeService = (serviceName) => {
+    return serviceName.toLowerCase().replace(/\s+/g, ' ').trim();
+  };
+  
+  const requestedService = normalizeService(service);
+  
   for (const booking of bookings) {
     const bookingStart = booking.time.includes(':') ? booking.time.split(':').slice(0, 2).join(':') : booking.time;
     const bookingService = booking.service;
-    const bookingDuration = SERVICE_DURATIONS[bookingService] || 30;
+    const normalizedBookingService = normalizeService(bookingService);
+    
+    // Check if this booking conflicts with the requested service
+    // A booking blocks a slot if it's the same service OR if there's any overlap
+    const bookingDuration = SERVICE_DURATIONS[bookingService] || SERVICE_DURATIONS[service] || 30;
     const bookingEnd = addMinutesToTime(bookingStart, bookingDuration);
     
     // Add all slots that would be blocked by this booking
