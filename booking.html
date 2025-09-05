@@ -530,23 +530,18 @@
             const startHour = 9; // 9 AM
             const endHour = 21;  // 9 PM
             
-            // Calculate how many slots we can fit in the working hours
-            const workingMinutes = (endHour - startHour) * 60;
-            const maxSlots = Math.floor(workingMinutes / duration);
+            // Always use 30-minute intervals for slot generation
+            // The duration affects how many slots are blocked, not the slot size
+            const slotInterval = 30;
             
-            console.log(`Generating time slots: duration=${duration}min, workingMinutes=${workingMinutes}, maxSlots=${maxSlots}`);
+            console.log(`Generating time slots: service duration=${duration}min, slot interval=${slotInterval}min`);
             
-            for (let i = 0; i < maxSlots; i++) {
-              const startMinute = startHour * 60 + (i * duration);
-              const hour = Math.floor(startMinute / 60);
-              const minute = startMinute % 60;
-              
-              // Ensure we don't exceed business hours
-              if (hour >= endHour) break;
-              
-              // Format time as HH:MM
-              const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-              slots.push(timeString);
+            for (let hour = startHour; hour < endHour; hour++) {
+              for (let minute = 0; minute < 60; minute += slotInterval) {
+                // Format time as HH:MM
+                const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+                slots.push(timeString);
+              }
             }
             
             console.log(`Generated ${slots.length} time slots:`, slots);
@@ -650,11 +645,15 @@
               const option = document.createElement('option');
               option.value = time;
               
-              // Convert time to range format (e.g., "9:00" -> "9:00-9:30")
+              // Convert time to range format based on service duration
               const [hours, minutes] = time.split(':').map(Number);
-              const endTime = new Date();
-              endTime.setHours(hours, minutes + 30, 0, 0);
-              const endTimeString = endTime.toTimeString().slice(0, 5);
+              const serviceDuration = getServiceDuration(selectedService);
+              
+              // Calculate end time properly
+              const totalMinutes = hours * 60 + minutes + serviceDuration;
+              const endHours = Math.floor(totalMinutes / 60);
+              const endMinutes = totalMinutes % 60;
+              const endTimeString = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
               
               option.textContent = `${time}-${endTimeString}`;
               timeSelect.appendChild(option);
@@ -807,9 +806,11 @@
                 opt.value = time;
                 
                 // Calculate end time for display
-                const startTime = new Date(`2000-01-01T${time}:00`);
-                const endTime = new Date(startTime.getTime() + serviceDuration * 60000);
-                const endTimeString = endTime.toTimeString().slice(0, 5);
+                const [hours, minutes] = time.split(':').map(Number);
+                const totalMinutes = hours * 60 + minutes + serviceDuration;
+                const endHours = Math.floor(totalMinutes / 60);
+                const endMinutes = totalMinutes % 60;
+                const endTimeString = `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
                 
                 // Format display text with duration info
                 const displayText = time.replace(/^(\d{1,2}):(\d{2})$/, (m, h, min) => {
