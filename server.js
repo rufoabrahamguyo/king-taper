@@ -533,13 +533,9 @@ async function getBookedSlots(date, service) {
     const bookingDuration = SERVICE_DURATIONS[bookingService] || 30;
     const bookingEnd = addMinutesToTime(bookingStart, bookingDuration);
     
-    const requestedDuration = SERVICE_DURATIONS[service] || 30;
-    const requestedStart = bookingStart;
-    const requestedEnd = addMinutesToTime(requestedStart, requestedDuration);
-    
     // Add all slots that would be blocked by this booking
-    let currentTime = requestedStart;
-    while (currentTime < requestedEnd) {
+    let currentTime = bookingStart;
+    while (currentTime < bookingEnd) {
       bookedSlots.add(currentTime);
       currentTime = addMinutesToTime(currentTime, 30);
     }
@@ -867,5 +863,27 @@ app.listen(PORT, () => {
     console.log(`🌐 Custom Domain: ${process.env.CUSTOM_DOMAIN || 'Not set'}`);
     console.log(`🔗 API Base URL: ${config.apiBaseUrl}`);
     console.log('📝 Remember to set all environment variables in Railway dashboard');
+  }
+});
+
+// Debug endpoint to check bookings
+app.get('/api/debug-bookings/:date', async (req, res) => {
+  const { date } = req.params;
+  try {
+    const [bookings] = await db.promise().query('SELECT * FROM bookings WHERE date = ?', [date]);
+    res.json({ success: true, bookings, count: bookings.length });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Debug endpoint to clear test bookings
+app.delete('/api/debug-clear/:date', async (req, res) => {
+  const { date } = req.params;
+  try {
+    const [result] = await db.promise().query('DELETE FROM bookings WHERE date = ?', [date]);
+    res.json({ success: true, deleted: result.affectedRows });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
