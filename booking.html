@@ -645,11 +645,18 @@
               return;
             }
             
-            // Add available times directly
+            // Add available times directly with range format
             availableTimes.forEach(time => {
               const option = document.createElement('option');
               option.value = time;
-              option.textContent = time;
+              
+              // Convert time to range format (e.g., "9:00" -> "9:00-9:30")
+              const [hours, minutes] = time.split(':').map(Number);
+              const endTime = new Date();
+              endTime.setHours(hours, minutes + 30, 0, 0);
+              const endTimeString = endTime.toTimeString().slice(0, 5);
+              
+              option.textContent = `${time}-${endTimeString}`;
               timeSelect.appendChild(option);
             });
             
