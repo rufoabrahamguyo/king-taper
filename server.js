@@ -335,15 +335,6 @@ app.post('/api/book', async (req, res) => {
       }
     }
 
-    // Check if the day/time is blocked (comprehensive check)
-    const blockedCheck = await checkBlockedDay(date, time, db);
-    if (blockedCheck.blocked) {
-      return res.status(409).json({ 
-        success: false, 
-        error: blockedCheck.reason || 'This time slot is not available for booking.' 
-      });
-    }
-
     // Check if it's Tuesday (closed day)
     const selectedDate = new Date(date + 'T00:00:00');
     const dayOfWeek = selectedDate.getDay();
@@ -354,21 +345,12 @@ app.post('/api/book', async (req, res) => {
       });
     }
 
-    // Check if time slot is blocked in blocked_times table
-    const [blockedTimes] = await db.promise().query(
-      'SELECT time_slot FROM blocked_times WHERE date = ? AND time_slot = ?',
+    // Check if time slot is already booked (simple check)
+    const [existingBooking] = await db.promise().query(
+      'SELECT id FROM bookings WHERE date = ? AND time = ?',
       [date, time]
     );
-    if (blockedTimes.length > 0) {
-      return res.status(409).json({ 
-        success: false, 
-        error: 'This time slot is blocked by admin. Please choose another time.' 
-      });
-    }
-
-    // Check if time slot conflicts with existing bookings
-    const bookedSlots = await getBookedSlots(date, service);
-    if (bookedSlots.includes(time)) {
+    if (existingBooking.length > 0) {
       return res.status(409).json({ 
         success: false, 
         error: 'Time slot already booked. Please choose another time.' 
@@ -626,7 +608,7 @@ async function getBlockedSlots(date) {
   return Array.from(blockedSlots);
 }
 
-// Available times - FIXED APPROACH - Check all blocking tables first
+// Available times - SIMPLIFIED - Only use bookings table
 app.get('/api/available-times', async (req, res) => {
   const { date, service } = req.query;
   if (!date) return res.status(400).json({ success: false, error: 'Missing date parameter' });
@@ -635,19 +617,7 @@ app.get('/api/available-times', async (req, res) => {
   try {
     console.log(`🔍 Checking available times for date: ${date}, service: ${service}`);
 
-    // STEP 1: Check if the entire day is blocked (blocked_days table)
-    const blockedCheck = await checkBlockedDay(date, null, db);
-    if (blockedCheck.blocked) {
-      console.log(`❌ Day is blocked: ${blockedCheck.reason}`);
-      return res.json({ 
-        success: true, 
-        times: [], 
-        blocked: true, 
-        reason: blockedCheck.reason 
-      });
-    }
-
-    // STEP 2: Check if it's Tuesday (hardcoded closed day)
+    // Check if it's Tuesday (hardcoded closed day)
     const selectedDate = new Date(date + 'T00:00:00');
     const dayOfWeek = selectedDate.getDay();
     if (dayOfWeek === 2) {
@@ -660,52 +630,23 @@ app.get('/api/available-times', async (req, res) => {
       });
     }
 
-    // STEP 3: Generate all possible time slots for the day
+    // Generate all possible time slots for the day
     const allSlots = generateAllSlots(date);
     console.log(`📋 Generated ${allSlots.length} possible time slots`);
 
-    // STEP 4: Get all blocked time slots from blocked_times table
-    const [blockedTimes] = await db.promise().query(
-      'SELECT time_slot FROM blocked_times WHERE date = ?',
-      [date]
-    );
-    const blockedTimeSlots = blockedTimes.map(bt => bt.time_slot);
-    console.log(`🚫 Found ${blockedTimeSlots.length} blocked time slots`);
-
-    // STEP 5: Get blocked time ranges from blocked_days table (partial day blocks)
-    const [blockedRanges] = await db.promise().query(
-      'SELECT start_time, end_time FROM blocked_days WHERE date = ? AND is_whole_day = FALSE',
+    // Get booked slots from bookings table only
+    const [bookings] = await db.promise().query(
+      'SELECT time FROM bookings WHERE date = ?',
       [date]
     );
     
-    const blockedRangeSlots = [];
-    for (const range of blockedRanges) {
-      if (range.start_time && range.end_time) {
-        let currentTime = range.start_time;
-        const endTime = range.end_time;
-        
-        while (currentTime < endTime) {
-          blockedRangeSlots.push(currentTime);
-          currentTime = addMinutesToTime(currentTime, 30);
-        }
-      }
-    }
-    console.log(`🚫 Found ${blockedRangeSlots.length} blocked range slots`);
+    const bookedTimes = bookings.map(b => b.time);
+    console.log(`📅 Found ${bookedTimes.length} booked slots:`, bookedTimes);
 
-    // STEP 6: Get booked slots (existing bookings)
-    const bookedSlots = await getBookedSlots(date, service);
-    console.log(`📅 Found ${bookedSlots.length} booked slots`);
-
-    // STEP 7: Combine all blocked slots
-    const allBlockedSlots = [...blockedTimeSlots, ...blockedRangeSlots, ...bookedSlots];
-    const uniqueBlockedSlots = [...new Set(allBlockedSlots)];
-    console.log(`🚫 Total blocked slots: ${uniqueBlockedSlots.length}`);
-
-    // STEP 8: Filter out all blocked slots to get available slots
-    const available = allSlots.filter(slot => !uniqueBlockedSlots.includes(slot));
+    // Filter out booked slots to get available slots
+    const available = allSlots.filter(slot => !bookedTimes.includes(slot));
     
     console.log(`✅ Final result: ${available.length} available slots out of ${allSlots.length} total slots`);
-    console.log(`📊 Breakdown: All=${allSlots.length}, BlockedTimes=${blockedTimeSlots.length}, BlockedRanges=${blockedRangeSlots.length}, Booked=${bookedSlots.length}, Available=${available.length}`);
     
     // Return available slots
     res.json({ success: true, times: available });
