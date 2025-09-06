@@ -637,6 +637,12 @@
               timeSelect.innerHTML = '<option value="">No available slots</option>';
               timeSelect.disabled = true;
               timeSelect.classList.add('time-select-disabled');
+              
+              // Hide status message when no slots available
+              const timeStatus = document.getElementById('time-status');
+              if (timeStatus) {
+                timeStatus.style.display = 'none';
+              }
               return;
             }
             
@@ -681,7 +687,8 @@
             // Update status message
             const timeStatus = document.getElementById('time-status');
             if (timeStatus) {
-              timeStatus.innerHTML = `<i class="fa fa-calendar-check"></i> <strong>${availableTimes.length} time slots available</strong> for ${selectedService}`;
+              const slotText = availableTimes.length === 1 ? 'time slot' : 'time slots';
+              timeStatus.innerHTML = `<i class="fa fa-calendar-check"></i> <strong>${availableTimes.length} ${slotText} available</strong> for ${selectedService}`;
               timeStatus.style.display = 'block';
               timeStatus.style.backgroundColor = '#d4edda';
               timeStatus.style.color = '#155724';
@@ -810,7 +817,8 @@
               // Show availability status
               const timeStatus = document.getElementById('time-status');
               if (timeStatus) {
-                timeStatus.innerHTML = `<i class="fa fa-calendar-check"></i> <strong>${availableTimes.length} time slots available</strong> for ${selectedService}`;
+                const slotText = availableTimes.length === 1 ? 'time slot' : 'time slots';
+                timeStatus.innerHTML = `<i class="fa fa-calendar-check"></i> <strong>${availableTimes.length} ${slotText} available</strong> for ${selectedService}`;
                 timeStatus.style.display = 'block';
                 timeStatus.style.color = '#28a745';
                 timeStatus.style.fontWeight = 'bold';
