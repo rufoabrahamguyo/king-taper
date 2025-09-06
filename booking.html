@@ -9,6 +9,62 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico">
     <script src="client-config.js"></script>
     <script src="new.js"></script>
+    <!-- Safari compatibility polyfills -->
+    <script>
+      // Safari fetch polyfill and compatibility fixes
+      if (!window.fetch) {
+        console.warn('Fetch not supported, loading polyfill...');
+        // Basic fetch polyfill for older Safari versions
+        window.fetch = function(url, options) {
+          return new Promise(function(resolve, reject) {
+            var xhr = new XMLHttpRequest();
+            xhr.open(options.method || 'GET', url);
+            
+            if (options.headers) {
+              Object.keys(options.headers).forEach(function(key) {
+                xhr.setRequestHeader(key, options.headers[key]);
+              });
+            }
+            
+            xhr.onload = function() {
+              resolve({
+                ok: xhr.status >= 200 && xhr.status < 300,
+                status: xhr.status,
+                json: function() {
+                  return Promise.resolve(JSON.parse(xhr.responseText));
+                }
+              });
+            };
+            
+            xhr.onerror = function() {
+              reject(new Error('Network error'));
+            };
+            
+            xhr.send(options.body);
+          });
+        };
+      }
+      
+      // Safari date parsing fix
+      if (!Date.prototype.toISOString) {
+        Date.prototype.toISOString = function() {
+          function pad(number) {
+            if (number < 10) {
+              return '0' + number;
+            }
+            return number;
+          }
+          return this.getUTCFullYear() +
+            '-' + pad(this.getUTCMonth() + 1) +
+            '-' + pad(this.getUTCDate()) +
+            'T' + pad(this.getUTCHours()) +
+            ':' + pad(this.getUTCMinutes()) +
+            ':' + pad(this.getUTCSeconds()) +
+            '.' + (this.getUTCMilliseconds() / 1000).toFixed(3).slice(2, 5) +
+            'Z';
+        };
+      }
+    </script>
     <style>
         .booking-hero {
             background: linear-gradient(120deg, var(--primary) 60%, var(--secondary) 100%);
@@ -40,6 +96,39 @@
             border-radius: var(--radius);
             padding: 3rem;
             box-shadow: var(--shadow);
+            /* Safari compatibility */
+            -webkit-appearance: none;
+            -webkit-border-radius: var(--radius);
+        }
+        
+        /* Safari input compatibility */
+        input[type="text"], input[type="email"], input[type="tel"], input[type="date"], select, textarea {
+            -webkit-appearance: none;
+            -webkit-border-radius: 8px;
+            -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+            -webkit-user-select: text;
+        }
+        
+        /* Safari date input specific fixes */
+        input[type="date"] {
+            -webkit-appearance: none;
+            -webkit-border-radius: 8px;
+            position: relative;
+        }
+        
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            -webkit-appearance: none;
+            background: transparent;
+            bottom: 0;
+            color: transparent;
+            cursor: pointer;
+            height: auto;
+            left: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: auto;
         }
 
         .form-group {
@@ -446,9 +535,13 @@
     </footer>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-          // Set minimum date to today for date picker
-          const today = new Date().toISOString().split('T')[0];
-          document.getElementById('date').min = today;
+          // Set minimum date to today for date picker - Safari compatible
+          const today = new Date();
+          const year = today.getFullYear();
+          const month = String(today.getMonth() + 1).padStart(2, '0');
+          const day = String(today.getDate()).padStart(2, '0');
+          const todayString = `${year}-${month}-${day}`;
+          document.getElementById('date').min = todayString;
           
           // Get date input element
           const dateInput = document.getElementById('date');
@@ -931,7 +1024,12 @@
             // Add cache-busting parameter to ensure fresh data
             const cacheBuster = Date.now();
             fetch(`${apiUrl}/api/available-times?date=${encodeURIComponent(date)}&service=${encodeURIComponent(service)}&_t=${cacheBuster}`)
-              .then(res => res.json())
+              .then(res => {
+                if (!res.ok) {
+                  throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+                }
+                return res.json();
+              })
               .then(data => {
                 clearTimeout(timeoutId); // Clear timeout on success
                 console.log('Available times response:', data);
@@ -952,11 +1050,15 @@
                 // NO CACHING - Always use fresh data to prevent showing booked slots
                 // This ensures users never see outdated time slot information
                 
-                // Filter out past times for TODAY before displaying
+                // Filter out past times for TODAY before displaying - Safari compatible
                 let filteredTimes = data.times;
-                const today = new Date().toISOString().split('T')[0];
-                if (date === today) {
-                  const now = new Date();
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const todayString = `${year}-${month}-${day}`;
+                
+                if (date === todayString) {
                   const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
                   filteredTimes = data.times.filter(time => time > currentTime);
                   console.log(`⏰ Frontend filtered past times for today, current: ${currentTime}, available: ${filteredTimes.length}`);
@@ -1012,9 +1114,13 @@
               if (dateInput.value) {
                 highlightBookedTimes(dateInput.value, this.dataset.service);
               } else {
-                // If no date selected, show available slots for today
-                const today = new Date().toISOString().split('T')[0];
-                highlightBookedTimes(today, this.dataset.service);
+                // If no date selected, show available slots for today - Safari compatible
+                const now = new Date();
+                const year = now.getFullYear();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const day = String(now.getDate()).padStart(2, '0');
+                const todayString = `${year}-${month}-${day}`;
+                highlightBookedTimes(todayString, this.dataset.service);
               }
             });
           });
@@ -1280,7 +1386,10 @@
             
             fetch(API_URL, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+              },
               body: JSON.stringify(bookingData),
               signal: controller.signal
             })
