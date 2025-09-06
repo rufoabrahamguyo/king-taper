@@ -343,7 +343,20 @@ app.post('/api/book', async (req, res) => {
       });
     }
 
-    // Check if time slot is already booked (simple check)
+    // Check if admin has blocked the entire day
+    const [blockedDays] = await db.promise().query(
+      'SELECT is_whole_day, reason FROM blocked_days WHERE date = ? AND is_whole_day = TRUE',
+      [date]
+    );
+    
+    if (blockedDays.length > 0) {
+      return res.status(409).json({
+        success: false,
+        error: blockedDays[0].reason || 'This day is not available for booking. Please select another date.'
+      });
+    }
+
+    // Check if time slot is already booked
     const [existingBooking] = await db.promise().query(
       'SELECT id FROM bookings WHERE date = ? AND time = ?',
       [date, time]
@@ -353,6 +366,38 @@ app.post('/api/book', async (req, res) => {
         success: false,
         error: 'Time slot already booked. Please choose another time.'
       });
+    }
+
+    // Check if admin has blocked this specific time slot
+    const [blockedTime] = await db.promise().query(
+      'SELECT id FROM blocked_times WHERE date = ? AND time_slot = ?',
+      [date, time]
+    );
+    if (blockedTime.length > 0) {
+      return res.status(409).json({
+        success: false,
+        error: 'This time slot is not available for booking. Please choose another time.'
+      });
+    }
+
+    // Check if time slot is in admin-blocked time range
+    const [blockedRanges] = await db.promise().query(
+      'SELECT start_time, end_time FROM blocked_days WHERE date = ? AND is_whole_day = FALSE',
+      [date]
+    );
+    
+    for (const range of blockedRanges) {
+      if (range.start_time && range.end_time) {
+        const startTime = range.start_time.includes(':') ? range.start_time.split(':').slice(0, 2).join(':') : range.start_time;
+        const endTime = range.end_time.includes(':') ? range.end_time.split(':').slice(0, 2).join(':') : range.end_time;
+        
+        if (time >= startTime && time < endTime) {
+          return res.status(409).json({
+            success: false,
+            error: 'This time slot is not available for booking. Please choose another time.'
+          });
+        }
+      }
     }
 
     // Create booking in database
@@ -606,7 +651,7 @@ async function getBlockedSlots(date) {
   return Array.from(blockedSlots);
 }
 
-// Available times - SIMPLIFIED AND WORKING
+// Available times - USER-FRIENDLY VERSION
 app.get('/api/available-times', async (req, res) => {
   const { date, service } = req.query;
   if (!date) return res.status(400).json({ success: false, error: 'Missing date parameter' });
@@ -628,11 +673,51 @@ app.get('/api/available-times', async (req, res) => {
       });
     }
 
+    // Check if date is in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (selectedDate < today) {
+      console.log(`❌ Past date - Cannot book in the past`);
+      return res.json({
+        success: true,
+        times: [],
+        blocked: true,
+        reason: 'Cannot book appointments in the past. Please select a future date.'
+      });
+    }
+
+    // Check if admin has blocked the entire day
+    const [blockedDays] = await db.promise().query(
+      'SELECT is_whole_day, reason FROM blocked_days WHERE date = ? AND is_whole_day = TRUE',
+      [date]
+    );
+    
+    if (blockedDays.length > 0) {
+      console.log(`❌ Admin blocked entire day - ${blockedDays[0].reason || 'Day is blocked'}`);
+      return res.json({
+        success: true,
+        times: [],
+        blocked: true,
+        reason: blockedDays[0].reason || 'This day is not available for booking. Please select another date.'
+      });
+    }
+
     // Generate all possible time slots for the day
     const allSlots = generateAllSlots(date);
     console.log(`📋 Generated ${allSlots.length} possible time slots`);
 
-    // Get booked slots from bookings table only
+    // Filter out past times if it's today
+    const now = new Date();
+    const isToday = selectedDate.getTime() === today.getTime();
+    let futureSlots = allSlots;
+    
+    if (isToday) {
+      const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+      futureSlots = allSlots.filter(slot => slot > currentTime);
+      console.log(`⏰ Filtered past times, current time: ${currentTime}, future slots: ${futureSlots.length}`);
+    }
+
+    // Get booked slots from bookings table
     const [bookings] = await db.promise().query(
       'SELECT time FROM bookings WHERE date = ?',
       [date]
@@ -645,10 +730,64 @@ app.get('/api/available-times', async (req, res) => {
     });
     console.log(`📅 Found ${bookedTimes.length} booked slots:`, bookedTimes);
 
-    // Filter out booked slots to get available slots
-    const available = allSlots.filter(slot => !bookedTimes.includes(slot));
+    // Get admin-blocked time ranges for the date
+    const [blockedRanges] = await db.promise().query(
+      'SELECT start_time, end_time FROM blocked_days WHERE date = ? AND is_whole_day = FALSE',
+      [date]
+    );
     
-    console.log(`✅ Final result: ${available.length} available slots out of ${allSlots.length} total slots`);
+    // Get admin-blocked individual time slots
+    const [blockedTimes] = await db.promise().query(
+      'SELECT time_slot FROM blocked_times WHERE date = ?',
+      [date]
+    );
+    
+    const blockedTimeSlots = blockedTimes.map(b => {
+      const timeStr = b.time_slot.toString();
+      return timeStr.includes(':') ? timeStr.substring(0, 5) : timeStr;
+    });
+    console.log(`🚫 Found ${blockedTimeSlots.length} admin-blocked time slots:`, blockedTimeSlots);
+    console.log(`🚫 Found ${blockedRanges.length} admin-blocked time ranges`);
+
+    // Filter out booked slots, admin-blocked slots, and admin-blocked ranges
+    const available = futureSlots.filter(slot => {
+      // Check if slot is booked
+      if (bookedTimes.includes(slot)) {
+        return false;
+      }
+      
+      // Check if slot is admin-blocked
+      if (blockedTimeSlots.includes(slot)) {
+        return false;
+      }
+      
+      // Check if slot is in admin-blocked time range
+      for (const range of blockedRanges) {
+        if (range.start_time && range.end_time) {
+          const startTime = range.start_time.includes(':') ? range.start_time.split(':').slice(0, 2).join(':') : range.start_time;
+          const endTime = range.end_time.includes(':') ? range.end_time.split(':').slice(0, 2).join(':') : range.end_time;
+          
+          if (slot >= startTime && slot < endTime) {
+            return false;
+          }
+        }
+      }
+      
+      return true;
+    });
+    
+    console.log(`✅ Final result: ${available.length} available slots out of ${futureSlots.length} future slots`);
+    
+    // Check if fully booked
+    if (available.length === 0) {
+      console.log(`📅 Day is fully booked`);
+      return res.json({
+        success: true,
+        times: [],
+        fullyBooked: true,
+        reason: 'All time slots for this date are fully booked. Please select another date.'
+      });
+    }
     
     // Return available slots
     res.json({ success: true, times: available });
