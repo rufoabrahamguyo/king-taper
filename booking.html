@@ -510,9 +510,9 @@
             const durations = {
               'Hair Cut': 30,        // 30 minutes
               'Kids Cut': 30,        // 30 minutes
-                      'Coils & Haircut': 90, // 1 hour 30 minutes
-        'Barrel Twist': 90,    // 1 hour 30 minutes
-        'Home Service': 90,    // 1 hour 30 minutes
+              'Coils & Haircut': 90, // 1 hour 30 minutes
+              'Barrel Twist': 90,    // 1 hour 30 minutes
+              'Home Service': 90,    // 1 hour 30 minutes
               'Hair Color': 60       // 1 hour
             };
             return durations[service] || 30;
@@ -640,6 +640,12 @@
               return;
             }
             
+            // Add placeholder option first
+            const placeholderOption = document.createElement('option');
+            placeholderOption.value = '';
+            placeholderOption.textContent = `Select Time (${availableTimes.length} slots available)`;
+            timeSelect.appendChild(placeholderOption);
+            
             // Add available times directly with range format
             availableTimes.forEach(time => {
               const option = document.createElement('option');
@@ -663,10 +669,14 @@
             timeSelect.disabled = false;
             timeSelect.classList.remove('time-select-disabled');
             
-            // Clear any status messages
+            // Update status message
             const timeStatus = document.getElementById('time-status');
             if (timeStatus) {
-              timeStatus.style.display = 'none';
+              timeStatus.innerHTML = `<i class="fa fa-calendar-check"></i> <strong>${availableTimes.length} time slots available</strong> for ${selectedService}`;
+              timeStatus.style.display = 'block';
+              timeStatus.style.backgroundColor = '#d4edda';
+              timeStatus.style.color = '#155724';
+              timeStatus.style.border = '1px solid #c3e6cb';
             }
             
             console.log(`Displayed ${availableTimes.length} available time slots`);
@@ -1124,11 +1134,16 @@
             const formData = new FormData(this);
             
             // Double-check that the selected time is still available
-            const selectedTime = formData.get('time');
+            let selectedTime = formData.get('time');
             if (!selectedTime || selectedTime === '') {
               document.getElementById('booking-error').textContent = 'Please select a valid time slot.';
               document.getElementById('booking-error').style.display = 'block';
               return;
+            }
+            
+            // Extract start time from range format (e.g., "17:00-17:30" -> "17:00")
+            if (selectedTime.includes('-')) {
+              selectedTime = selectedTime.split('-')[0];
             }
             
             // Debug: Log all form data
@@ -1144,7 +1159,7 @@
             const phone = formData.get('phone').trim();
             const service = formData.get('selectedService');
             const date = formData.get('date');
-            const time = formData.get('time');
+            const time = selectedTime; // Use the extracted start time
             
             // Check for empty required fields
             if (!firstName || !lastName || !phone || !service || !date || !time) {
@@ -1191,7 +1206,7 @@
               service: formData.get('selectedService'),
               price: formData.get('selectedPrice'),
               date: formData.get('date'),
-              time: formData.get('time'),
+              time: selectedTime, // Use the extracted start time
               message: formData.get('message')
             };
         
@@ -1273,8 +1288,11 @@
                 submitBtn.textContent = 'Book Appointment';
                 submitBtn.disabled = false;
               } else {
-                if (data.error === 'Time slot already booked') {
+                if (data.error && data.error.includes('Time slot already booked')) {
                   document.getElementById('booking-error').textContent = 'Sorry, that time slot is already booked. Please choose another time.';
+                  document.getElementById('booking-error').style.display = 'block';
+                } else if (data.error && data.error.includes('not available for booking')) {
+                  document.getElementById('booking-error').textContent = 'This time slot is not available for booking. Please choose another time.';
                   document.getElementById('booking-error').style.display = 'block';
                 } else {
                   document.getElementById('booking-error').textContent = 'Booking failed to save: ' + (data.error || 'Unknown error');

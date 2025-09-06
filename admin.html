@@ -169,6 +169,11 @@
             }
         }
         window.API_BASE_URL = API_BASE_URL;
+        
+        // Also set it globally for compatibility
+        if (typeof window.KingTaperConfig === 'undefined') {
+            window.KingTaperConfig = { apiBaseUrl: API_BASE_URL };
+        }
 
         console.log('🔧 Admin Configuration:', { 
             KingTaperConfig: window.KingTaperConfig,
