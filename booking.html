@@ -944,8 +944,18 @@
                 // NO CACHING - Always use fresh data to prevent showing booked slots
                 // This ensures users never see outdated time slot information
                 
-                // Use the available times directly from the API
-                updateTimeSelectDirect(data.times, service, date);
+                // Filter out past times for TODAY before displaying
+                let filteredTimes = data.times;
+                const today = new Date().toISOString().split('T')[0];
+                if (date === today) {
+                  const now = new Date();
+                  const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+                  filteredTimes = data.times.filter(time => time > currentTime);
+                  console.log(`⏰ Frontend filtered past times for today, current: ${currentTime}, available: ${filteredTimes.length}`);
+                }
+                
+                // Use the filtered times
+                updateTimeSelectDirect(filteredTimes, service, date);
               })
               .catch(error => {
                 clearTimeout(timeoutId); // Clear timeout on error
