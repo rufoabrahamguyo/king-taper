@@ -676,7 +676,10 @@ app.get('/api/available-times', async (req, res) => {
     // Check if date is in the past
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    if (selectedDate < today) {
+    const inputDate = new Date(date + 'T00:00:00');
+    inputDate.setHours(0, 0, 0, 0);
+    
+    if (inputDate < today) {
       console.log(`❌ Past date - Cannot book in the past`);
       return res.json({
         success: true,
@@ -706,16 +709,22 @@ app.get('/api/available-times', async (req, res) => {
     const allSlots = generateAllSlots(date);
     console.log(`📋 Generated ${allSlots.length} possible time slots`);
 
-    // Filter out past times if it's today
+    // Filter out past times - ALWAYS filter past times for any date
     const now = new Date();
     const isToday = selectedDate.getTime() === today.getTime();
     let futureSlots = allSlots;
     
     if (isToday) {
+      // For today, filter out times that have already passed
       const currentTime = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
       futureSlots = allSlots.filter(slot => slot > currentTime);
-      console.log(`⏰ Filtered past times, current time: ${currentTime}, future slots: ${futureSlots.length}`);
+      console.log(`⏰ Filtered past times for today, current time: ${currentTime}, future slots: ${futureSlots.length}`);
+    } else if (selectedDate < today) {
+      // For past dates, no slots should be available
+      futureSlots = [];
+      console.log(`⏰ Past date - no future slots available`);
     }
+    // For future dates, all slots are available (no filtering needed)
 
     // Get booked slots from bookings table
     const [bookings] = await db.promise().query(
@@ -778,19 +787,38 @@ app.get('/api/available-times', async (req, res) => {
     
     console.log(`✅ Final result: ${available.length} available slots out of ${futureSlots.length} future slots`);
     
-    // Check if fully booked
-    if (available.length === 0) {
-      console.log(`📅 Day is fully booked`);
+    // Check if there are enough slots for the service duration
+    const serviceDuration = SERVICE_DURATIONS[service] || 30;
+    const requiredSlots = Math.ceil(serviceDuration / BUSINESS_HOURS.interval);
+    
+    // Filter available slots to only include those that can accommodate the service duration
+    const validSlots = available.filter(slot => {
+      const slotIndex = futureSlots.indexOf(slot);
+      // Check if there are enough consecutive slots for the service duration
+      for (let i = 0; i < requiredSlots; i++) {
+        const checkSlot = futureSlots[slotIndex + i];
+        if (!checkSlot || !available.includes(checkSlot)) {
+          return false;
+        }
+      }
+      return true;
+    });
+    
+    console.log(`🔍 Service: ${service}, Duration: ${serviceDuration}min, Required slots: ${requiredSlots}, Valid slots: ${validSlots.length}`);
+    
+    // Check if fully booked (no valid slots for service duration)
+    if (validSlots.length === 0) {
+      console.log(`📅 Day is fully booked for ${service} (${serviceDuration}min service)`);
       return res.json({
         success: true,
         times: [],
         fullyBooked: true,
-        reason: 'All time slots for this date are fully booked. Please select another date.'
+        reason: `All time slots for this date are fully booked for ${service}. Please select another date.`
       });
     }
     
-    // Return available slots
-    res.json({ success: true, times: available });
+    // Return valid slots that can accommodate the service duration
+    res.json({ success: true, times: validSlots });
 
   } catch (error) {
     console.error('❌ Error fetching available times:', error);
