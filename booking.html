@@ -895,10 +895,10 @@
             
             console.log('Fetching booked times for date:', date, 'and service:', service);
             
-            // Check cache first
+            // Check cache first (but with shorter duration for real-time updates)
             const cacheKey = `${date}-${service}`;
             const cached = bookedTimesCache.get(cacheKey);
-            if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+            if (cached && (Date.now() - cached.timestamp) < 30000) { // Reduced to 30 seconds
               console.log('Using cached data for:', cacheKey);
               updateTimeSelect(cached.times, service, date);
               return;
@@ -916,7 +916,9 @@
             }, 10000); // 10 second timeout
             
             const apiUrl = window.KingTaperConfig ? window.KingTaperConfig.apiBaseUrl : 'http://localhost:3001';
-            fetch(`${apiUrl}/api/available-times?date=${encodeURIComponent(date)}&service=${encodeURIComponent(service)}`)
+            // Add cache-busting parameter to ensure fresh data
+            const cacheBuster = Date.now();
+            fetch(`${apiUrl}/api/available-times?date=${encodeURIComponent(date)}&service=${encodeURIComponent(service)}&_t=${cacheBuster}`)
               .then(res => res.json())
               .then(data => {
                 clearTimeout(timeoutId); // Clear timeout on success
@@ -1271,7 +1273,8 @@
                   console.log('Refreshing available time slots for:', bookedDate);
                   const selectedService = bookingData.service;
                   if (selectedService) {
-                    highlightBookedTimes(bookedDate, selectedService);
+                    // Force refresh the time slots by calling the API again
+                    loadAvailableTimes(bookedDate, selectedService);
                   }
                 }
                 
