@@ -640,7 +640,11 @@ app.get('/api/available-times', async (req, res) => {
       [date]
     );
     
-    const bookedTimes = bookings.map(b => b.time);
+    const bookedTimes = bookings.map(b => {
+      // Convert database time format (HH:MM:SS) to slot format (HH:MM)
+      const timeStr = b.time.toString();
+      return timeStr.includes(':') ? timeStr.substring(0, 5) : timeStr;
+    });
     console.log(`📅 Found ${bookedTimes.length} booked slots:`, bookedTimes);
 
     // Filter out booked slots to get available slots
