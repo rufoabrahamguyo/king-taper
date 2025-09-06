@@ -236,16 +236,14 @@ function checkTimeSlotConflict(date, startTime, service, db) {
       
       // Check for conflicts
       for (const booking of bookings) {
-        const bookingStart = booking.time;
+        // Convert database time format (HH:MM:SS) to comparison format (HH:MM)
+        const bookingStart = booking.time.includes(':') ? booking.time.split(':').slice(0, 2).join(':') : booking.time;
         const bookingService = booking.service;
         const bookingDuration = SERVICE_DURATIONS[bookingService] || 30;
         const bookingEnd = addMinutesToTime(bookingStart, bookingDuration);
         
         // Check if times overlap
-        if (
-          (startTime < bookingEnd && endTime > bookingStart) ||
-          (bookingStart < endTime && bookingEnd > startTime)
-        ) {
+        if (startTime < bookingEnd && endTime > bookingStart) {
           resolve(true); // Conflict found
         }
       }
@@ -345,15 +343,21 @@ app.post('/api/book', async (req, res) => {
       });
     }
 
-    // Check if time slot is already booked (simple check)
-    const [existingBooking] = await db.promise().query(
-      'SELECT id FROM bookings WHERE date = ? AND time = ?',
-      [date, time]
-    );
-    if (existingBooking.length > 0) {
-      return res.status(409).json({ 
-        success: false, 
-        error: 'Time slot already booked. Please choose another time.' 
+    // Check if the day/time is blocked
+    const blockedCheck = await checkBlockedDay(date, time, db);
+    if (blockedCheck.blocked) {
+      return res.status(409).json({
+        success: false,
+        error: blockedCheck.reason || 'This time slot is not available for booking.'
+      });
+    }
+
+    // Check if time slot conflicts with existing bookings
+    const conflictCheck = await checkTimeSlotConflict(date, time, service, db);
+    if (conflictCheck) {
+      return res.status(409).json({
+        success: false,
+        error: 'Time slot already booked. Please choose another time.'
       });
     }
 
@@ -608,52 +612,87 @@ async function getBlockedSlots(date) {
   return Array.from(blockedSlots);
 }
 
-// Available times - SIMPLIFIED - Only use bookings table
+// Available times - UPDATED with duration-aware logic
 app.get('/api/available-times', async (req, res) => {
   const { date, service } = req.query;
   if (!date) return res.status(400).json({ success: false, error: 'Missing date parameter' });
   if (!service) return res.status(400).json({ success: false, error: 'Missing service parameter' });
 
   try {
-    console.log(`🔍 Checking available times for date: ${date}, service: ${service}`);
-
-    // Check if it's Tuesday (hardcoded closed day)
-    const selectedDate = new Date(date + 'T00:00:00');
-    const dayOfWeek = selectedDate.getDay();
-    if (dayOfWeek === 2) {
-      console.log(`❌ Tuesday - We are closed`);
-      return res.json({ 
-        success: true, 
-        times: [], 
-        blocked: true, 
-        reason: 'We are closed on Tuesdays' 
-      });
+    // Check if the entire day is blocked
+    console.log('🔍 Checking blocked day for:', date);
+    const blockedCheck = await checkBlockedDay(date, null, db);
+    console.log('🔍 Blocked check result:', blockedCheck);
+    if (blockedCheck.blocked) {
+      console.log('🚫 Day is blocked, returning empty times');
+      return res.json({ success: true, times: [], blocked: true, reason: blockedCheck.reason });
     }
 
-    // Generate all possible time slots for the day
-    const allSlots = generateAllSlots(date);
-    console.log(`📋 Generated ${allSlots.length} possible time slots`);
-
-    // Get booked slots from bookings table only
+    // Get all bookings for the date
     const [bookings] = await db.promise().query(
-      'SELECT time FROM bookings WHERE date = ?',
+      'SELECT time, service FROM bookings WHERE date = ?',
       [date]
     );
     
-    const bookedTimes = bookings.map(b => {
-      // Convert database time format (HH:MM:SS) to slot format (HH:MM)
-      const timeStr = b.time.toString();
-      return timeStr.includes(':') ? timeStr.substring(0, 5) : timeStr;
-    });
-    console.log(`📅 Found ${bookedTimes.length} booked slots:`, bookedTimes);
+    // Get blocked time ranges for the date
+    const [blockedDays] = await db.promise().query(
+      'SELECT start_time, end_time FROM blocked_days WHERE date = ? AND is_whole_day = FALSE',
+      [date]
+    );
+    
+    // Filter out conflicting time slots
+    const availableSlots = ALL_TIME_SLOTS.filter(slot => {
+      // Check if this slot conflicts with any existing booking
+      for (const booking of bookings) {
+        // Convert database time format (HH:MM:SS) to comparison format (HH:MM)
+        const bookingStart = booking.time.includes(':') ? booking.time.split(':').slice(0, 2).join(':') : booking.time;
 
-    // Filter out booked slots to get available slots
-    const available = allSlots.filter(slot => !bookedTimes.includes(slot));
+        const bookingService = booking.service;
+        const bookingDuration = SERVICE_DURATIONS[bookingService] || 30;
+        const bookingEnd = addMinutesToTime(bookingStart, bookingDuration);
+        
+        const requestedDuration = SERVICE_DURATIONS[service] || 30;
+        const requestedEnd = addMinutesToTime(slot, requestedDuration);
+        
+        // Check for overlap
+        if (slot < bookingEnd && requestedEnd > bookingStart) {
+          return false; // Slot conflicts
+        }
+      }
+      
+      // Check if this slot is in a blocked time range
+      for (const blockedDay of blockedDays) {
+        if (blockedDay.start_time && blockedDay.end_time) {
+          const blockedStart = blockedDay.start_time.includes(':') ? blockedDay.start_time.split(':').slice(0, 2).join(':') : blockedDay.start_time;
+          const blockedEnd = blockedDay.end_time.includes(':') ? blockedDay.end_time.split(':').slice(0, 2).join(':') : blockedDay.end_time;
+          
+          const requestedDuration = SERVICE_DURATIONS[service] || 30;
+          const requestedEnd = addMinutesToTime(slot, requestedDuration);
+          
+          // Check if slot overlaps with blocked range
+          if (slot < blockedEnd && requestedEnd > blockedStart) {
+            return false; // Slot is blocked
+          }
+        }
+      }
+      
+      return true; // Slot is available
+    });
     
-    console.log(`✅ Final result: ${available.length} available slots out of ${allSlots.length} total slots`);
+    console.log(`📅 Date: ${date}, Service: ${service}, Available times:`, availableSlots);
     
-    // Return available slots
-    res.json({ success: true, times: available });
+    // Check if the day is fully booked (no available slots)
+    if (availableSlots.length === 0) {
+      console.log('📅 Day is fully booked, returning empty times with fullyBooked flag');
+      return res.json({ 
+        success: true, 
+        times: [], 
+        fullyBooked: true, 
+        reason: 'All time slots for this date and service are fully booked. Please select another date.' 
+      });
+    }
+    
+    res.json({ success: true, times: availableSlots });
 
   } catch (error) {
     console.error('❌ Error fetching available times:', error);
