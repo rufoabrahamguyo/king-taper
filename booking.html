@@ -647,7 +647,14 @@
             timeSelect.appendChild(placeholderOption);
             
             // Add available times directly with range format
+            // DOUBLE-CHECK: Only add times that are actually available
             availableTimes.forEach(time => {
+              // Additional validation to ensure this time is truly available
+              if (!time || time === '') {
+                console.warn('Skipping invalid time slot:', time);
+                return;
+              }
+              
               const option = document.createElement('option');
               option.value = time;
               
@@ -663,6 +670,8 @@
               
               option.textContent = `${time}-${endTimeString}`;
               timeSelect.appendChild(option);
+              
+              console.log(`✅ Added available time slot: ${time}-${endTimeString}`);
             });
             
             // Enable the select
@@ -895,14 +904,9 @@
             
             console.log('Fetching booked times for date:', date, 'and service:', service);
             
-            // Check cache first (but with shorter duration for real-time updates)
-            const cacheKey = `${date}-${service}`;
-            const cached = bookedTimesCache.get(cacheKey);
-            if (cached && (Date.now() - cached.timestamp) < 30000) { // Reduced to 30 seconds
-              console.log('Using cached data for:', cacheKey);
-              updateTimeSelect(cached.times, service, date);
-              return;
-            }
+            // DISABLE CACHING - Always fetch fresh data to prevent showing booked slots
+            // This ensures users never see booked time slots as available
+            console.log('Fetching fresh data to prevent showing booked slots');
             
             // Show loading state
             timeSelect.classList.add('time-select-loading');
@@ -937,11 +941,8 @@
                   return;
                 }
                 
-                // Cache the result
-                bookedTimesCache.set(cacheKey, {
-                  times: data.times,
-                  timestamp: Date.now()
-                });
+                // NO CACHING - Always use fresh data to prevent showing booked slots
+                // This ensures users never see outdated time slot information
                 
                 // Use the available times directly from the API
                 updateTimeSelectDirect(data.times, service, date);
@@ -1139,6 +1140,18 @@
             let selectedTime = formData.get('time');
             if (!selectedTime || selectedTime === '') {
               document.getElementById('booking-error').textContent = 'Please select a valid time slot.';
+              document.getElementById('booking-error').style.display = 'block';
+              return;
+            }
+            
+            // FINAL VALIDATION: Check if the selected time is actually available
+            // This prevents the "Time slot already booked" error
+            const availableTimes = Array.from(timeSelect.options)
+              .filter(option => option.value !== '')
+              .map(option => option.value.split('-')[0]); // Extract start time
+            
+            if (!availableTimes.includes(selectedTime)) {
+              document.getElementById('booking-error').textContent = 'This time slot is no longer available. Please refresh and select another time.';
               document.getElementById('booking-error').style.display = 'block';
               return;
             }
